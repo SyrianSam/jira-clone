@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden; /* Prevents unwanted scrolling if content overflows */
+        }
+        .left-column {
+            flex: 0 0 30%; /* Fixed width of 30% */
+            background: #f9f9f9;
+            overflow-y: auto; /* Enables scrolling within the column if content overflows */
+            padding: 20px;
+        }
+        .right-column {
+            flex: 1; /* Takes up the remaining space */
+            background: #ffffff;
+            overflow-y: auto; /* Enables scrolling within the column if content overflows */
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f0f0f0;
+        }
+        form {
+            margin-top: 20px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="left-column">
+        <h2>Tasks List</h2>
+        <ul>
+            {{ range .tasks }}
+            <li hx-get="/task-details/{{ .ID }}" hx-target="#taskDetails" hx-trigger="click">
+                {{ .Title }}
+            </li>
+            {{ end }}
+        </ul>
+    </div>
+    <div class="right-column">
+        <h2>Task Details</h2>
+        {{ range .tasks }}
+        <form action="/submit-task" method="post">
+            <input type="hidden" name="taskID" value="{{ .ID }}">
+            <table>
+                <tr><th>Title</th><td>{{ .Title }}</td></tr>
+                <tr><th>Description</th><td>{{ .Description }}</td></tr>
+                <tr><th>Assigned To</th><td>{{ .AssignedTo }}</td></tr>
+            </table>
+            <button type="submit">Submit Task</button>
+        </form>
+        {{ end }}
+    </div>
+</body>
+</html>
