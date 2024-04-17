@@ -61,13 +61,16 @@ func (s *Store) GetUserByUsername(username string) (*model.User, error) {
 }
 
 func (s *Store) CreateTask(task model.Task) error {
-	_, err := s.db.Exec("INSERT INTO tasks (title, description, assigned_to) VALUES ($1, $2, $3)", task.Title, task.Description, task.AssignedTo)
+	_, err := s.db.Exec(`
+		INSERT INTO tasks (title, description, assigned_to, state, first_name, last_name, birth_date, email, postal_code, city, regulatory_compliance_check, contract_compliance, task_creator, task_responsible, comments) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+		task.Title, task.Description, task.AssignedTo, task.State, task.FirstName, task.LastName, task.BirthDate, task.Email, task.PostalCode, task.City,
+		task.RegulatoryComplianceCheck, task.ContractCompliance, task.TaskCreator, task.TaskResponsible, task.Comments)
 	return err
 }
-
 func (s *Store) GetTasks() ([]model.Task, error) {
 	var tasks []model.Task
-	rows, err := s.db.Query("SELECT id, title, description, assigned_to FROM tasks")
+	rows, err := s.db.Query("SELECT id, title, description, assigned_to, state, first_name, last_name, birth_date, email, postal_code, city, regulatory_compliance_check, contract_compliance, task_creator, task_responsible, comments FROM tasks")
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +78,7 @@ func (s *Store) GetTasks() ([]model.Task, error) {
 
 	for rows.Next() {
 		var task model.Task
-		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.AssignedTo); err != nil {
+		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.AssignedTo, &task.State, &task.FirstName, &task.LastName, &task.BirthDate, &task.Email, &task.PostalCode, &task.City, &task.RegulatoryComplianceCheck, &task.ContractCompliance, &task.TaskCreator, &task.TaskResponsible, &task.Comments); err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, task)
@@ -85,7 +88,9 @@ func (s *Store) GetTasks() ([]model.Task, error) {
 
 func (s *Store) GetTaskByID(id int) (*model.Task, error) {
 	var task model.Task
-	err := s.db.QueryRow("SELECT id, title, description, assigned_to FROM tasks WHERE id = $1", id).Scan(&task.ID, &task.Title, &task.Description, &task.AssignedTo)
+	err := s.db.QueryRow(`
+		SELECT id, title, description, assigned_to, state, first_name, last_name, birth_date, email, postal_code, city, regulatory_compliance_check, contract_compliance, task_creator, task_responsible, comments 
+		FROM tasks WHERE id = $1`, id).Scan(&task.ID, &task.Title, &task.Description, &task.AssignedTo, &task.State, &task.FirstName, &task.LastName, &task.BirthDate, &task.Email, &task.PostalCode, &task.City, &task.RegulatoryComplianceCheck, &task.ContractCompliance, &task.TaskCreator, &task.TaskResponsible, &task.Comments)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +98,9 @@ func (s *Store) GetTaskByID(id int) (*model.Task, error) {
 }
 
 func (s *Store) UpdateTask(task model.Task) error {
-	_, err := s.db.Exec("UPDATE tasks SET title = $1, description = $2, assigned_to = $3 WHERE id = $4", task.Title, task.Description, task.AssignedTo, task.ID)
+	_, err := s.db.Exec(`
+		UPDATE tasks SET title = $1, description = $2, assigned_to = $3, state = $4, first_name = $5, last_name = $6, birth_date = $7, email = $8, postal_code = $9, city = $10, regulatory_compliance_check = $11, contract_compliance = $12, task_creator = $13, task_responsible = $14, comments = $15 WHERE id = $16`,
+		task.Title, task.Description, task.AssignedTo, task.State, task.FirstName, task.LastName, task.BirthDate, task.Email, task.PostalCode, task.City, task.RegulatoryComplianceCheck, task.ContractCompliance, task.TaskCreator, task.TaskResponsible, task.Comments, task.ID)
 	return err
 }
 

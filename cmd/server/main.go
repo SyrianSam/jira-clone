@@ -13,6 +13,7 @@ func main() {
 	r := gin.Default()
 
 	r.LoadHTMLGlob("tmpl/*")
+	r.Static("/static", "./static")
 
 	// Setup database connection (example using PostgreSQL)
 	connectionString := "host=localhost port=5432 user=postgres password=soleares dbname=gira sslmode=disable"

@@ -1,0 +1,15 @@
+<div class="tasks-header">
+    <h2>Tasks List</h2>
+    <button class="new-task-button" hx-get="/task/new" hx-target="#taskDetails" hx-trigger="click">Create New Task</button>
+</div>
+<div>
+    {{ range .tasks }}
+    <div class="task-card" hx-get="/task/details/{{ .ID }}" hx-target="#taskDetails" hx-trigger="click">
+        <h3>{{ .Title }}</h3>
+        <div class="task-details">
+            <span class="task-id"><strong>ID:</strong> {{ .ID }}</span>
+            <span class="task-state"><strong>State:</strong> {{ .State }}</span>
+        </div>
+    </div>
+    {{ end }}
+</div>

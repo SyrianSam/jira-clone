@@ -1,0 +1,35 @@
+<form  id="taskForm" hx-post="/submit-task" hx-target="#taskList" >
+    <input type="hidden" name="taskID" value="{{ .Task.ID }}">
+    <table class="task-table">
+        <tr><th>Title</th><td><input type="text" name="title" value="{{ .Task.Title }}"></td></tr>
+        <tr><th>State</th><td><input type="text" name="etat" value="{{ .Task.State }}"></td></tr>
+        <tr><th>Description</th><td><textarea name="description">{{ .Task.Description }}</textarea></td></tr>
+        <tr><th>Assigned To</th><td><input type="text" name="assigned_to" value="{{ .Task.AssignedTo }}"></td></tr>
+        <tr><th>First Name</th><td><input type="text" name="first_name" value="{{ .Task.FirstName }}"></td></tr>
+        <tr><th>Last Name</th><td><input type="text" name="last_name" value="{{ .Task.LastName }}"></td></tr>
+        <tr><th>Birth Date</th><td><input type="date" name="birth_date" value="{{ .Task.BirthDate }}" required></td></tr>
+        <tr><th>Email</th><td><input type="email" name="email" value="{{ .Task.Email }}"></td></tr>
+        <tr><th>Postal Code</th><td><input type="text" name="postal_code" value="{{ .Task.PostalCode }}"></td></tr>
+        <tr><th>City</th><td><input type="text" name="city" value="{{ .Task.City }}"></td></tr>
+        <tr><th>Regulatory Compliance Check</th>
+            <td>
+                <select name="regulatory_compliance_check">
+                    <option value="true" {{ if .Task.RegulatoryComplianceCheck }}selected{{ end }}>OK</option>
+                    <option value="false" {{ if not .Task.RegulatoryComplianceCheck }}selected{{ end }}>KO</option>
+                </select>
+            </td>
+        </tr>
+        <tr><th>Contract Compliant?</th>
+            <td>
+                <select name="contract_compliance">
+                    <option value="true" {{ if .Task.ContractCompliance }}selected{{ end }}>Yes</option>
+                    <option value="false" {{ if not .Task.ContractCompliance }}selected{{ end }}>No</option>
+                </select>
+            </td>
+        </tr>
+        <tr><th>Task Creator</th><td><input type="text" name="task_creator" value="{{ .Task.TaskCreator }}"></td></tr>
+        <tr><th>Task Responsible</th><td><input type="text" name="task_responsible" value="{{ .Task.TaskResponsible }}"></td></tr>
+        <tr><th>Comments</th><td><textarea name="comments">{{ .Task.Comments }}</textarea></td></tr>
+    </table>
+    <button type="submit">Submit Task</button>
+</form>

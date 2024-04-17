@@ -1,30 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script src="https://unpkg.com/htmx.org/dist/htmx.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 0;
+            font-family: Arial, sans-serif;
             display: flex;
+            flex-direction: column;
             height: 100vh;
-            overflow: hidden; /* Prevents unwanted scrolling if content overflows */
+            overflow: hidden;
         }
+
+        .dashboard-container {
+            display: flex; /* Set the dashboard container to use flex */
+            flex-grow: 1; /* Allow it to take up the remaining height */
+            overflow: hidden; /* Handle overflow */
+        }
+
         .left-column {
-            flex: 0 0 30%; /* Fixed width of 30% */
-            background: #f9f9f9;
-            overflow-y: auto; /* Enables scrolling within the column if content overflows */
+            flex: 0 0 20%; /* Take up 30% of the horizontal space */
+            background: #FFFFFF;
+            overflow-y: auto;
             padding: 20px;
         }
+
         .right-column {
-            flex: 1; /* Takes up the remaining space */
-            background: #ffffff;
-            overflow-y: auto; /* Enables scrolling within the column if content overflows */
+            flex: 1; /* Fill the remaining space */
+            background: #FFFFFF;
+            overflow-y: auto;
             padding: 20px;
         }
+
+        .navbar {
+            background-color: #FFFFFF;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            height: 50px; /* Adjusted for consistency */
+            width: 100%;
+        }
+
+        .navbar {
+            background-color: #FFFFFF;
+            display: flex;
+            justify-content: space-between;
+            align-items: center; /* Centers items vertically */
+            padding: 0 20px;
+            margin-bot: 5px;
+            height: 50px; /* Fixed height for the navbar */
+            width: 100%; /* Ensures the navbar spans the full width */
+        }
+        
+        .navbar h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .logout-button {
+            background-color: #f44336;
+            color: white;
+            padding: 8px 36px;
+            text-decoration: none;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right:50px;
+        }
+
+        .logout-button:hover {
+            background-color: #d73833;
+        }
+
+        .task-table {
+            width: 100%; /* Ensures the table uses the full width of its container */
+        }
+        
+        .task-table th, .task-table td {
+            padding: 8px; /* Adjust padding as necessary */
+        }
+        
+        .task-table th {
+            width: 30%; /* Sets the width of the labels to 30% of the table */
+            background: #f0f0f0; /* Optional: sets a background color for headers */
+            text-align: left;
+        }
+        
+        .task-table td {
+            width: 70%; /* Sets the width of the input fields to 70% of the table */
+        }
+        
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -51,32 +121,154 @@
         button:hover {
             background-color: #0056b3;
         }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+            left: -5%;
+        }
+
+        .dropbtn {
+            background-color: #FFFFFF;
+            color: black;
+            padding: 8px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            left: -35px;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown-content a:hover {background-color: #f1f1f1}
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .task-card {
+            border: 1px solid #ccc;
+            padding: 8px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            cursor: default;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .task-card h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 16px; /* Optionally adjust the font size */
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis; /* Ensures long titles do not break the card layout */
+        }
+        
+        .task-details {
+            display: flex;
+            justify-content: space-between; /* Aligns ID and State on the same line, spaced apart */
+            margin-top: 5px;
+        }
+        
+        .task-id, .task-state {
+            flex: 1;
+            text-align: left;
+            font-size: 14px; /* Smaller font for details */
+        }
+        
+        .task-card:hover {
+            background-color: #e9e9e9;
+        }
+        
+        #taskList li {
+            cursor: default; /* Ensures the cursor remains the default type */
+        }
+        #taskList li:hover {
+            background-color: #f0f0f0; /* Adds a background color on hover */
+        }
+
+        .left-column, .right-column {
+            overflow-y: auto; /* Enable vertical scrolling */
+            scrollbar-width: none; /* Firefox */
+        }
+
+        .left-column::-webkit-scrollbar, .right-column::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Edge */
+        }
+
+        .tasks-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;  /* Adds padding on both sides */
+            margin-bottom: 10px;  /* Adds space below the header */
+        }
+
+        .new-task-button {
+            padding: 6px 12px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+
     </style>
 </head>
 <body>
-    <div class="left-column">
-        <h2>Tasks List</h2>
-        <ul>
+    <header>
+        <div class="navbar">
+            <h1>Dashboard</h1>
+            <div class="dropdown">
+                <button class="dropbtn">☰</button> <!-- Using Unicode character for simplicity -->
+                <div class="dropdown-content">
+                    <a href="/logout">Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="dashboard-container">
+    <div class="left-column" id="taskList">
+        <div class="tasks-header">
+            <h2>Tasks List</h2>
+            <button class="new-task-button" hx-post="/task/new" hx-target="#taskDetails" hx-trigger="click">Créer un ticket</button>
+        </div>
+        <div>
             {{ range .tasks }}
-            <li hx-get="/task-details/{{ .ID }}" hx-target="#taskDetails" hx-trigger="click">
-                {{ .Title }}
-            </li>
+            <div class="task-card" hx-get="/task/details/{{ .ID }}" hx-target="#taskDetails" hx-trigger="click">
+                <h3>{{ .Title }}</h3>
+                <div class="task-details">
+                    <span class="task-id"><strong>ID:</strong> {{ .ID }}</span>
+                    <span class="task-state"><strong>State:</strong> {{ .State }}</span>
+                </div>
+            </div>
             {{ end }}
-        </ul>
+        </div>
+
     </div>
     <div class="right-column">
         <h2>Task Details</h2>
-        {{ range .tasks }}
-        <form action="/submit-task" method="post">
-            <input type="hidden" name="taskID" value="{{ .ID }}">
-            <table>
-                <tr><th>Title</th><td>{{ .Title }}</td></tr>
-                <tr><th>Description</th><td>{{ .Description }}</td></tr>
-                <tr><th>Assigned To</th><td>{{ .AssignedTo }}</td></tr>
-            </table>
-            <button type="submit">Submit Task</button>
-        </form>
-        {{ end }}
+        <div id="taskDetails">
+            Click on a task to see the details here.
+        </div>
+    </div>
     </div>
 </body>
+
+
 </html>
