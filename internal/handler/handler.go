@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -43,9 +42,12 @@ func (h *Handler) SetupRoutes(router *gin.Engine) {
 	router.GET("/logout", h.HandleLogout)
 	router.GET("/dashboard", AuthRequired(), h.ShowDashboard)
 	router.GET("/task/details/:id", AuthRequired(), h.ShowTaskForm)
+	router.POST("/task/details/:id", AuthRequired(), h.UpdateTask)
+	router.DELETE("/task/delete/:id", AuthRequired(), h.DeleteTask)
 	router.POST("/task/new", AuthRequired(), h.CreateNewTask)
 	router.GET("/task/showAll", AuthRequired(), h.ShowTasks)
-	router.POST("/submit-task", AuthRequired(), h.submitTask)
+	router.POST("/modify-task", AuthRequired(), h.ModifyTask)
+	router.POST("/create-task", AuthRequired(), h.InsertTask)
 
 }
 
@@ -107,7 +109,32 @@ func (h *Handler) ShowDashboard(c *gin.Context) {
 
 func (h *Handler) CreateNewTask(c *gin.Context) {
 
-	c.HTML(http.StatusOK, "taskform.templ", nil)
+	c.HTML(http.StatusOK, "taskform_new.templ", nil)
+}
+
+func (h *Handler) DeleteTask(c *gin.Context) {
+	taskID := c.Param("id") // Get task ID from the URL parameter
+	if taskID == "" {
+		log.Printf("Task ID not provided")
+		c.HTML(http.StatusBadRequest, "error.templ", gin.H{"Error": "No task ID provided"})
+		return
+	}
+	// Convert the taskID to an integer
+	id, err := strconv.Atoi(taskID)
+	if err != nil {
+		log.Printf("Invalid task ID format: %v", err)
+		c.HTML(http.StatusBadRequest, "error.templ", gin.H{"Error": "Invalid task ID format"})
+		return
+	}
+	err = h.store.DeleteTask(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to delete task"})
+		return
+	}
+	// c.JSON(http.StatusOK, gin.H{"message": "Task deleted"})
+
+	c.Redirect(http.StatusSeeOther, "/task/showAll")
+
 }
 
 func (h *Handler) ShowTaskForm(c *gin.Context) {
@@ -168,8 +195,10 @@ func (h *Handler) CreateTask(c *gin.Context) {
 	task := model.Task{
 		Title:       title,
 		Description: description,
-		AssignedTo:  userID.(int), // Assuming task is initially assigned to the creator
+		AssignedTo:  userID.(string), // Assuming task is initially assigned to the creator
 	}
+
+	log.Printf(task.State)
 	h.store.CreateTask(task)
 
 	// Redirect to the dashboard or another appropriate page
@@ -194,30 +223,69 @@ func (h *Handler) ShowTasks(c *gin.Context) {
 	h.renderTaskList(c)
 }
 
-func (h *Handler) submitTask(c *gin.Context) {
+func (h *Handler) InsertTask(c *gin.Context) {
 	var task model.Task
 
-	// Log specific form values
-	log.Printf("Birthdate from form: %s", c.PostForm("birth_date"))
+	// Log specific form values for debugging
+	log.Printf("Credit card from form: %s", c.PostForm("credit_card"))
 	log.Printf("Title from form: %s", c.PostForm("title"))
 
+	// Bind form data to task struct
 	if err := c.ShouldBind(&task); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error binding data: " + err.Error()})
 		return
 	}
 	log.Printf("Task Data: %+v", task)
 
-	// Validate birth_date is not empty and is a valid date
-	if _, err := time.Parse("2006-01-02", task.BirthDate); task.BirthDate != "" && err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid birth date"})
-		return
-	}
-
+	// Attempt to create the task using the data provided
 	if err := h.store.CreateTask(task); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to create task: " + err.Error()})
 		return
 	}
 
+	// Redirect to a specific page after successful creation
+	c.Redirect(http.StatusSeeOther, "/task/showAll")
+}
+
+func (h *Handler) UpdateTask(c *gin.Context) {
+	var updates model.Task
+
+	log.Printf("state from form: %s", c.PostForm("state"))
+	log.Printf("Title from form: %s", c.PostForm("title"))
+	log.Printf("ID from form: %s", c.Param("id"))
+
+	updates.ID = c.Param("id")
+	updates.State = c.PostForm("state")
+	updates.Title = c.PostForm("title")
+
+	// Update the task in the database
+	if err := h.store.UpdateTask(&updates); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to update task", "details": err.Error()})
+		return
+	}
+
+	c.Redirect(http.StatusSeeOther, "/task/showAll")
+}
+
+func (h *Handler) ModifyTask(c *gin.Context) {
+	var task model.Task
+
+	// Log specific form values for debugging
+	log.Printf("Credit card from form: %s", c.PostForm("credit_card"))
+	log.Printf("Title from form: %s", c.PostForm("title"))
+
+	// Bind form data to task struct
+	if err := c.ShouldBind(&task); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error binding data: " + err.Error()})
+		return
+	}
+	// Attempt to create the task using the data provided
+	if err := h.store.UpdateTask(&task); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to create task: " + err.Error()})
+		return
+	}
+
+	// Redirect to a specific page after successful creation
 	c.Redirect(http.StatusSeeOther, "/task/showAll")
 }
 

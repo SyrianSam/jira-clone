@@ -1,10 +1,10 @@
-<form id="taskForm" hx-post="/task/details/{{ .Task.ID }}" hx-target="#taskList">
+<form id="taskForm" hx-post="/create-task" hx-target="#taskList">
     <!-- General Information Section -->
     <fieldset>
         <legend>General</legend>
         <label>Title:</label>
         <p>
-           <input type="text" name="title" value="{{ .Task.Title }}">
+           <input type="text" name="title" value=" {{ .Task.Title }}">
         </p>
         <label>Etat:</label>
            <select name="state">
@@ -38,8 +38,8 @@
         <p>
             <label>Conformité Contractuelle:</label>
             <select name="contract_compliance">
-                <option value="true" {{ if .Task.ContractCompliance }}selected{{ end }}>true</option>
-                <option value="false" {{ if not .Task.ContractCompliance }}selected{{ end }}>false</option>
+                <option value="true" {{ if .Task.ContractCompliance }}selected{{ end }}>Oui</option>
+                <option value="false" {{ if not .Task.ContractCompliance }}selected{{ end }}>Non</option>
             </select>
         </p>
         <p>
@@ -72,7 +72,7 @@
         </p>
         <p>
             <label>Birth Date</label>
-            <input type="date" name="birth_date" value="{{ .Task.BirthDate }}">
+            <input type="date" name="birth_date" value="{{ .Task.BirthDate }}" required>
         </p>
     </fieldset>
 
@@ -97,5 +97,5 @@
         </p>
     </fieldset>
 
-    <button type="submit">Modify Task</button>
+    <button type="submit">Create Task</button>
 </form>
