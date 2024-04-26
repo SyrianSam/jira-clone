@@ -55,14 +55,14 @@
     </style>
 </head>
 <body>
-    <div id="login-panel" class="login-panel" >
-    <h1 id="header1">Login Portal</h1>
+    <div class="login-panel" id="login-panel">
+    <h1 id="header1">Create Account</h1>
     
     {{ if .Error }}
     <p style="color: red;">{{ .Error }}</p>
     {{ end }}
 
-        <form hx-post="/login" method="post">
+        <form hx-post="/create-account" method="post">
             <div class="form-group">
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username">
@@ -71,12 +71,8 @@
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password">
             </div>
-            <button type="submit">Login</button>
-            
-        <a href="/create-account" style="display: block; margin-top: 20px; float:right;">Create Account</a>
+            <button type="submit">Create Account</button>
         </form>
     </div>
-
-
 </body>
 </html>

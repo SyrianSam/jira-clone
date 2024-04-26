@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -44,11 +46,25 @@ func (h *Handler) SetupRoutes(router *gin.Engine) {
 	router.GET("/task/details/:id", AuthRequired(), h.ShowTaskForm)
 	router.POST("/task/details/:id", AuthRequired(), h.UpdateTask)
 	router.DELETE("/task/delete/:id", AuthRequired(), h.DeleteTask)
+	router.POST("/task/archive/:id", AuthRequired(), h.ArchiveTask)
 	router.POST("/task/new", AuthRequired(), h.CreateNewTask)
 	router.GET("/task/showAll", AuthRequired(), h.ShowTasks)
 	router.POST("/modify-task", AuthRequired(), h.ModifyTask)
 	router.POST("/create-task", AuthRequired(), h.InsertTask)
+	router.GET("/users", h.SearchUsers)
+	router.GET("/create-account", h.CreateAccountRoute)
+	router.POST("/create-account", h.CreateAccount)
 
+}
+
+func (h *Handler) SearchUsers(c *gin.Context) {
+	q := c.Param("assigned_to")
+	users, err := h.store.FindUsers(q)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Failed to search users")
+		return
+	}
+	c.HTML(http.StatusOK, "assigned_to_list.templ", gin.H{"users": users})
 }
 
 func (h *Handler) ShowLogin(c *gin.Context) {
@@ -94,6 +110,9 @@ func AuthRequired() gin.HandlerFunc {
 }
 
 func (h *Handler) ShowDashboard(c *gin.Context) {
+
+	session := sessions.Default(c)
+	userID := session.Get("user_id")
 	tasks, err := h.store.GetTasks()
 	if err != nil {
 		// Log the error and handle it appropriately
@@ -103,13 +122,136 @@ func (h *Handler) ShowDashboard(c *gin.Context) {
 		return
 	}
 
+	filteredTasks, _ := h.filterTasklist(c, tasks, "all")
 	// If no error, render the dashboard with the tasks
-	c.HTML(http.StatusOK, "dashboard.templ", gin.H{"tasks": tasks})
+	c.HTML(http.StatusOK, "dashboard.templ", gin.H{"tasks": filteredTasks, "filter": "all", "userID": userID})
+}
+func (h *Handler) filterTasklist(c *gin.Context, tasks []model.Task, filter string) ([]model.Task, error) {
+
+	session := sessions.Default(c)
+	userID := session.Get("user_id")
+
+	var filteredTasks []model.Task
+	for _, task := range tasks {
+		log.Printf("task.AssignedTo")
+		log.Printf(task.AssignedTo)
+		log.Printf(task.Archived)
+		switch filter {
+		case "my":
+			// Assuming there's a method c.User() to get current user and Task struct has an AssignedTo attribute
+			assignedToId, _ := strconv.Atoi(strings.Split(task.AssignedTo, " - ")[0])
+			if assignedToId == userID.(int) && task.Archived == "0" {
+				filteredTasks = append(filteredTasks, task)
+			}
+		case "archived":
+			// Assuming Task struct has an Archived attribute
+			if task.Archived == "1" {
+				filteredTasks = append(filteredTasks, task)
+			}
+		case "name":
+			// You'll need to handle this differently, perhaps via another parameter for name filtering
+		case "all":
+			// No filtering needed, just append
+			if task.Archived == "0" {
+				filteredTasks = append(filteredTasks, task)
+			}
+		}
+	}
+
+	return filteredTasks, nil
+}
+func (h *Handler) renderTaskList(c *gin.Context, filter string) {
+
+	tasks, err := h.store.GetTasks() // Assuming this fetches all tasks
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error getting tasks: " + err.Error()})
+		return
+	}
+
+	var filteredTasks []model.Task
+
+	session := sessions.Default(c)
+	userID := session.Get("user_id")
+
+	log.Printf("%v", userID)
+	// Apply filtering based on the filter parameter
+	for _, task := range tasks {
+		log.Printf("task.AssignedTo")
+		log.Printf(task.AssignedTo)
+		log.Printf(task.Archived)
+		switch filter {
+		case "my":
+			// Assuming there's a method c.User() to get current user and Task struct has an AssignedTo attribute
+			assignedToId, _ := strconv.Atoi(strings.Split(task.AssignedTo, " - ")[0])
+			if assignedToId == userID.(int) && task.Archived == "0" {
+				filteredTasks = append(filteredTasks, task)
+			}
+		case "archived":
+			// Assuming Task struct has an Archived attribute
+			if task.Archived == "1" {
+				filteredTasks = append(filteredTasks, task)
+			}
+		case "name":
+			// You'll need to handle this differently, perhaps via another parameter for name filtering
+		case "all":
+			// No filtering needed, just append
+			if task.Archived == "0" {
+				filteredTasks = append(filteredTasks, task)
+			}
+		}
+	}
+
+	if len(filteredTasks) == 0 {
+		c.HTML(http.StatusOK, "taskList.templ", gin.H{"message": "No tasks found."})
+	} else {
+		c.HTML(http.StatusOK, "taskList.templ", gin.H{"tasks": filteredTasks, "filter": filter, "userID": userID})
+	}
+}
+func (h *Handler) CreateAccount(c *gin.Context) {
+	username := c.PostForm("username")
+	password := c.PostForm("password")
+
+	// log.Printf(username, password)
+
+	err := h.store.CreateUser(username, password)
+	if err != nil {
+		// Handle different kinds of errors appropriately
+		c.HTML(http.StatusInternalServerError, "login.templ", gin.H{"Error": "Server error"})
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/login")
+}
+
+func (h *Handler) CreateAccountRoute(c *gin.Context) {
+	c.HTML(http.StatusOK, "create_account.templ", nil)
+
 }
 
 func (h *Handler) CreateNewTask(c *gin.Context) {
 
 	c.HTML(http.StatusOK, "taskform_new.templ", nil)
+}
+
+func (h *Handler) ArchiveTask(c *gin.Context) {
+	taskID := c.Param("id")
+	if taskID == "" {
+		log.Printf("Task ID not provided")
+		c.HTML(http.StatusBadRequest, "error.templ", gin.H{"Error": "No task ID provided"})
+		return
+	}
+	id, err := strconv.Atoi(taskID)
+	if err != nil {
+		log.Printf("Invalid task ID format: %v", err)
+		c.HTML(http.StatusBadRequest, "error.templ", gin.H{"Error": "Invalid task ID format"})
+		return
+	}
+	err = h.store.ArchiveTask(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to archive task"})
+		return
+	}
+	c.Redirect(http.StatusSeeOther, "/task/showAll")
 }
 
 func (h *Handler) DeleteTask(c *gin.Context) {
@@ -205,36 +347,50 @@ func (h *Handler) CreateTask(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/dashboard")
 }
 
-func (h *Handler) renderTaskList(c *gin.Context) {
-	tasks, err := h.store.GetTasks()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error getting tasks: " + err.Error()})
-		return
-	}
-
-	if len(tasks) == 0 {
-		c.HTML(http.StatusOK, "taskList.templ", gin.H{"message": "No tasks found."})
-	} else {
-		c.HTML(http.StatusOK, "taskList.templ", gin.H{"tasks": tasks})
-	}
-}
-
 func (h *Handler) ShowTasks(c *gin.Context) {
-	h.renderTaskList(c)
+	// Fetch the 'filter' query parameter, default to "all" if not specified
+	filter := c.DefaultQuery("filter", "all")
+
+	// Log the received filter parameter for debugging
+	log.Printf("Filter parameter received: %s", filter)
+
+	// Call the renderTaskList function with the determined filter
+	h.renderTaskList(c, filter)
 }
 
 func (h *Handler) InsertTask(c *gin.Context) {
 	var task model.Task
 
 	// Log specific form values for debugging
+	log.Printf("in InsertTask:")
 	log.Printf("Credit card from form: %s", c.PostForm("credit_card"))
 	log.Printf("Title from form: %s", c.PostForm("title"))
+	log.Printf("Context keys: %v", c.Request.Header)
+	for key, value := range c.Request.Header {
+		log.Printf("%s: %s", key, value)
+	}
+	log.Printf("Form data: %v", c.Request.Form)
+	for key, value := range c.Request.Form {
+		log.Printf("%s: %s", key, value)
+	}
 
 	// Bind form data to task struct
 	if err := c.ShouldBind(&task); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Error binding data: " + err.Error()})
 		return
 	}
+	now := time.Now()
+	task.CreatedAt = now.Format("2006-01-02 15:04:05")
+	task.Title = h.store.GenerateTitle()
+	task.BankAccountNumber = h.store.GenerateBankAccountNumber()
+
+	parts := strings.Split(task.AssignedTo, "-")
+	if len(parts) != 2 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid format for AssignedTo"})
+		return
+	}
+	// task.AssignedTo = strings.TrimSpace(parts[0])
+
 	log.Printf("Task Data: %+v", task)
 
 	// Attempt to create the task using the data provided
@@ -250,13 +406,13 @@ func (h *Handler) InsertTask(c *gin.Context) {
 func (h *Handler) UpdateTask(c *gin.Context) {
 	var updates model.Task
 
-	log.Printf("state from form: %s", c.PostForm("state"))
-	log.Printf("Title from form: %s", c.PostForm("title"))
-	log.Printf("ID from form: %s", c.Param("id"))
-
-	updates.ID = c.Param("id")
-	updates.State = c.PostForm("state")
-	updates.Title = c.PostForm("title")
+	if err := c.ShouldBind(&updates); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error binding data: " + err.Error()})
+		return
+	}
+	updates.ID, _ = strconv.Atoi(c.Param("id"))
+	now := time.Now()
+	updates.UpdatedAt = now.Format("2006-01-02 15:04:05")
 
 	// Update the task in the database
 	if err := h.store.UpdateTask(&updates); err != nil {

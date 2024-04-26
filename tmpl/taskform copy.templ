@@ -1,0 +1,102 @@
+<form id="taskForm" hx-post="/task/details/{{ .Task.ID }}" hx-target="#taskList">
+    <!-- General Information Section -->
+    <fieldset>
+        <legend>General</legend>
+        <label>Title:</label>
+        <p>
+           <input type="text" name="title" value="{{ .Task.Title }}">
+        </p>
+        <label>Etat:</label>
+           <select name="state">
+                <option value="En Cours">En Cours</option>
+                <option value="A Faire">A Faire</option>
+                <option value="Terminé">Terminé</option>
+           </select>
+        <p>
+            <label>Description:</label>
+            <textarea name="description">{{ .Task.Description }}</textarea>
+        </p>
+    </fieldset>
+    
+
+    <!-- Additional Information Section -->
+    <fieldset>
+        <legend>Informations</legend>
+        <p>
+            <label>Carte de Crédit:</label>
+            <select name="credit_card">
+                <option value="oui">Oui</option>
+                <option value="non">Non</option>
+            </select>
+        </p>
+        <p>
+            <label>Régularisation Bancaire:</label>
+            <select name="regulatory_compliance_check">
+                <option value="true" {{ if .Task.RegulatoryComplianceCheck }}selected{{ end }}>OK</option>
+                <option value="false" {{ if not .Task.RegulatoryComplianceCheck }}selected{{ end }}>KO</option>
+            </select>
+        </p>
+        <p>
+            <label>Conformité Contractuelle:</label>
+            <select name="contract_compliance">
+                <option value="true" {{ if .Task.ContractCompliance }}selected{{ end }}>true</option>
+                <option value="false" {{ if not .Task.ContractCompliance }}selected{{ end }}>false</option>
+            </select>
+        </p>
+        <p>
+            <label>Responsable:</label>
+            <input type="text" name="task_responsible" value="{{ .Task.TaskResponsible }}">
+        </p>
+        <p>
+            <label>Rapporteur:</label>
+            <input type="text" name="task_creator" value="{{ .Task.TaskCreator }}">
+        </p>
+        <p>
+            <label>Ville:</label>
+            <input type="text" name="city" value="{{ .Task.City }}">
+        </p>
+        <p>
+            <label>Prénom:</label>
+            <input type="text" name="first_name" value="{{ .Task.FirstName }}">
+        </p>
+        <p>
+            <label>Email:</label>
+            <input type="email" name="email" value="{{ .Task.Email }}">
+        </p>
+        <p>
+            <label>Code Postal:</label>
+            <input type="text" name="postal_code" value="{{ .Task.PostalCode }}">
+        </p>
+        <p>
+            <label>Priorité:</label>
+            <input type="text" name="priority" value="">
+        </p>
+        <p>
+            <label>Birth Date</label>
+            <input type="date" name="birth_date" value="{{ .Task.BirthDate }}">
+        </p>
+    </fieldset>
+
+    <!-- More Fields Section -->
+    <fieldset>
+        <legend>Plus de champs</legend>
+        <p>
+            <label>Estimant d Origine:</label>
+            <input type="text" name="origin_estimator" value="{{ .Task.EstimantOrigine }}">
+        </p>
+        <p>
+            <label>Projet:</label>
+            <input type="text" name="project" value="{{ .Task.Project }}">
+        </p>
+        <p>
+            <label>Création:</label>
+            <input type="date" name="creation_date" value="{{ .Task.CreatedAt }}">
+        </p>
+        <p>
+            <label>Mise à jour:</label>
+            <input type="date" name="update_date" value="{{ .Task.UpdatedAt }}">
+        </p>
+    </fieldset>
+
+    <button type="submit">Modify Task</button>
+</form>

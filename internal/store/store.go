@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"jira-clone/internal/model"
+	"log"
+	"math/rand"
 
 	_ "github.com/lib/pq" // PostgreSQL driver
 )
@@ -46,9 +48,14 @@ func (s *Store) VerifyUser(username, password string) (*model.User, error) {
 	return &user, nil
 }
 
-func (s *Store) CreateUser(user model.User) error {
-	_, err := s.db.Exec("INSERT INTO users (username, password, role) VALUES ($1, $2, $3)", user.Username, user.Password, user.Role)
-	return err
+func (s *Store) CreateUser(username string, password string) error {
+
+	log.Printf(username)
+	_, err := s.db.Exec("INSERT INTO users (username, password, heirarchy) VALUES ($1, $2, 1)", username, password)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Store) GetUserByUsername(username string) (*model.User, error) {
@@ -60,9 +67,36 @@ func (s *Store) GetUserByUsername(username string) (*model.User, error) {
 	return &user, nil
 }
 
+func (s *Store) FindUsers(query string) ([]model.User, error) {
+	var users []model.User
+	query = "%" + query + "%" // Add % wildcards
+	rows, err := s.db.Query(
+		"SELECT id, username FROM users WHERE username ILIKE $1", query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var user model.User
+		err := rows.Scan(&user.ID, &user.Username)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func (s *Store) GetTasks() ([]model.Task, error) {
 	var tasks []model.Task
-	rows, err := s.db.Query("SELECT id, title, description, assigned_to, state, first_name, last_name, birth_date, email, postal_code, city, regulatory_compliance_check, contract_compliance, task_creator, task_responsible, comments FROM tasks")
+	rows, err := s.db.Query("SELECT id, title, description, assigned_to, state, first_name, last_name, birth_date, email, postal_code, city, regulatory_compliance_check, contract_compliance, task_creator, task_responsible, comments, archived FROM tasks ")
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +104,7 @@ func (s *Store) GetTasks() ([]model.Task, error) {
 
 	for rows.Next() {
 		var task model.Task
-		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.AssignedTo, &task.State, &task.FirstName, &task.LastName, &task.BirthDate, &task.Email, &task.PostalCode, &task.City, &task.RegulatoryComplianceCheck, &task.ContractCompliance, &task.TaskCreator, &task.TaskResponsible, &task.Comments); err != nil {
+		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.AssignedTo, &task.State, &task.FirstName, &task.LastName, &task.BirthDate, &task.Email, &task.PostalCode, &task.City, &task.RegulatoryComplianceCheck, &task.ContractCompliance, &task.TaskCreator, &task.TaskResponsible, &task.Comments, &task.Archived); err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, task)
@@ -81,8 +115,8 @@ func (s *Store) GetTasks() ([]model.Task, error) {
 func (s *Store) GetTaskByID(id int) (*model.Task, error) {
 	var task model.Task
 	err := s.db.QueryRow(`
-		SELECT id, title, description, assigned_to, state, first_name, last_name, birth_date, email, postal_code, city, regulatory_compliance_check, contract_compliance, task_creator, task_responsible, comments 
-		FROM tasks WHERE id = $1`, id).Scan(&task.ID, &task.Title, &task.Description, &task.AssignedTo, &task.State, &task.FirstName, &task.LastName, &task.BirthDate, &task.Email, &task.PostalCode, &task.City, &task.RegulatoryComplianceCheck, &task.ContractCompliance, &task.TaskCreator, &task.TaskResponsible, &task.Comments)
+		SELECT id, title, description, assigned_to, state, first_name, last_name, birth_date, email, postal_code, city, regulatory_compliance_check, contract_compliance, task_creator, task_responsible, comments, priority, credit_card, created_at, COALESCE(updated_at, ''), bank_account_number
+		FROM tasks WHERE id = $1`, id).Scan(&task.ID, &task.Title, &task.Description, &task.AssignedTo, &task.State, &task.FirstName, &task.LastName, &task.BirthDate, &task.Email, &task.PostalCode, &task.City, &task.RegulatoryComplianceCheck, &task.ContractCompliance, &task.TaskCreator, &task.TaskResponsible, &task.Comments, &task.Priority, &task.CreditCard, &task.CreatedAt, &task.UpdatedAt, &task.BankAccountNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -90,92 +124,86 @@ func (s *Store) GetTaskByID(id int) (*model.Task, error) {
 }
 
 func (s *Store) CreateTask(task model.Task) error {
-	_, err := s.db.Exec(`
+	log.Printf("task.BankAccountNumber")
+	log.Printf(task.BankAccountNumber)
+	query := `
         INSERT INTO tasks (
             title, description, assigned_to, state, first_name, last_name, 
             birth_date, email, postal_code, city, regulatory_compliance_check, 
             contract_compliance, task_creator, task_responsible, comments, 
-            priority, credit_card, estimant_origine, project, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
-		task.Title, task.Description, task.AssignedTo, task.State, task.FirstName, task.LastName,
-		task.BirthDate, task.Email, task.PostalCode, task.City, task.RegulatoryComplianceCheck,
-		task.ContractCompliance, task.TaskCreator, task.TaskResponsible, task.Comments,
-		task.Priority, task.CreditCard, task.EstimantOrigine, task.Project, task.CreatedAt, task.UpdatedAt)
-	return err
+            priority, credit_card, created_at, bank_account_number, archived
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+        RETURNING id`
+
+	err := s.db.QueryRow(query, task.Title, task.Description, task.AssignedTo, task.State,
+		task.FirstName, task.LastName, task.BirthDate, task.Email, task.PostalCode,
+		task.City, task.RegulatoryComplianceCheck, task.ContractCompliance,
+		task.TaskCreator, task.TaskResponsible, task.Comments, task.Priority,
+		task.CreditCard, task.CreatedAt, task.BankAccountNumber, 0).Scan(&task.ID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Store) UpdateTask(task *model.Task) error {
-	query := `UPDATE tasks SET title=$1, description=$2, state=$3 WHERE id=$4`
+	log.Printf("update_at: %s", task.UpdatedAt)
+	log.Printf("Title: %s", task.Title)
+	log.Printf("ID: %d", task.ID)
+	query := `UPDATE tasks SET
+        title=$1, description=$2, state=$3, first_name=$4, last_name=$5,
+        birth_date=$6, email=$7, postal_code=$8, city=$9, 
+        regulatory_compliance_check=$10, contract_compliance=$11, 
+        task_creator=$12, task_responsible=$13, comments=$14, 
+        priority=$15, credit_card=$16, updated_at=$17, bank_account_number=$18 WHERE id=$19`
 
-	_, err := s.db.Exec(query, task.Title, task.Description, task.State, task.ID)
+	_, err := s.db.Exec(query, task.Title, task.Description, task.State,
+		task.FirstName, task.LastName, task.BirthDate, task.Email,
+		task.PostalCode, task.City, task.RegulatoryComplianceCheck,
+		task.ContractCompliance, task.TaskCreator, task.TaskResponsible,
+		task.Comments, task.Priority, task.CreditCard, task.UpdatedAt, task.BankAccountNumber, task.ID)
+
 	return err
 }
 
-// func (s *Store) UpdateTask2(task *model.Task) error {
-// 	// Starting the query construction
-// 	query := "UPDATE tasks SET "
-// 	params := []interface{}{}
-// 	paramID := 1
+func (s *Store) GenerateTitle() string {
+	var id int
+	err := s.db.QueryRow("SELECT id FROM tasks ORDER BY id DESC LIMIT 1").Scan(&id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			id = 0
+		} else {
+			return ""
+		}
+	}
+	id++
 
-// 	// Append each field to the query only if it's not the zero value of the field
-// 	if task.Title != "" {
-// 		query += fmt.Sprintf("title = $%d, ", paramID)
-// 		params = append(params, task.Title)
-// 		paramID++
-// 	}
-// 	if task.Description != "" {
-// 		query += fmt.Sprintf("description = $%d, ", paramID)
-// 		params = append(params, task.Description)
-// 		paramID++
-// 	}
-// 	if task.State != "" {
-// 		query += fmt.Sprintf("state = $%d, ", paramID)
-// 		params = append(params, task.State)
-// 		paramID++
-// 	}
-// 	// Continue for other fields...
-// 	if task.FirstName != "" {
-// 		query += fmt.Sprintf("first_name = $%d, ", paramID)
-// 		params = append(params, task.FirstName)
-// 		paramID++
-// 	}
-// 	if task.LastName != "" {
-// 		query += fmt.Sprintf("last_name = $%d, ", paramID)
-// 		params = append(params, task.LastName)
-// 		paramID++
-// 	}
-// 	// Additional fields would be handled here similarly...
+	log.Printf("here is the generated ID: %d", id)
+	return fmt.Sprintf("KBB-%d", id)
+}
 
-// 	// Handle boolean and date fields (only update if needed)
-// 	// This assumes the frontend or service ensures correct values or uses defaults
-// 	if task.RegulatoryComplianceCheck { // Assuming we want to update even if it's false
-// 		query += fmt.Sprintf("regulatory_compliance_check = $%d, ", paramID)
-// 		params = append(params, task.RegulatoryComplianceCheck)
-// 		paramID++
-// 	}
-// 	if task.ContractCompliance { // Same assumption as above
-// 		query += fmt.Sprintf("contract_compliance = $%d, ", paramID)
-// 		params = append(params, task.ContractCompliance)
-// 		paramID++
-// 	}
-
-// 	// Always update 'updated_at' field to current timestamp
-// 	query += fmt.Sprintf("updated_at = $%d ", paramID)
-// 	params = append(params, time.Now())
-// 	paramID++
-
-// 	// Ensure the query ends correctly with the WHERE clause
-// 	query = strings.TrimSuffix(query, ", ") // Remove the last comma from the last added field
-// 	query += fmt.Sprintf(" WHERE id = $%d", paramID)
-// 	params = append(params, task.ID)
-// 	log.Printf("%v", query)
-// 	log.Printf("%v", params)
-// 	// Execute the query
-// 	_, err := s.db.Exec(query, params...)
-// 	return err
-// }
+// GenerateBankAccountNumber generates a bank account number with a random
+// country code prefix, which is one of "A", "B", "C", or "D".
+func (s *Store) GenerateBankAccountNumber() string {
+	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const n = 10
+	countryCode := []byte{'A', 'B', 'C', 'D'}[rand.Intn(4)]
+	b := make([]byte, n+1)
+	b[0] = countryCode
+	for i := 1; i < len(b); i++ {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(b)
+}
 
 func (s *Store) DeleteTask(id int) error {
 	_, err := s.db.Exec("DELETE FROM tasks WHERE id = $1", id)
+	return err
+}
+
+func (s *Store) ArchiveTask(id int) error {
+	_, err := s.db.Exec("UPDATE tasks SET archived = 1 WHERE id = $1", id)
 	return err
 }

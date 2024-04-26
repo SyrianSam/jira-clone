@@ -1,0 +1,5 @@
+<datalist id="assigned-to-list" >
+    {{ range $user := .users }}
+    <option value="{{ $user.ID }} - {{ $user.Username }}" label="{{ $user.Username }}" >
+    {{ end }}
+</datalist>

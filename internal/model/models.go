@@ -7,8 +7,13 @@ type User struct {
 	Role     string
 }
 
+type UserPreference struct {
+	UserID     int
+	FieldOrder string
+}
+
 type Task struct {
-	ID                        string `form:"taskID"`
+	ID                        int    `form:"taskID"`
 	Title                     string `form:"title"`
 	Description               string `form:"description"`
 	AssignedTo                string `form:"assigned_to"`
@@ -26,8 +31,11 @@ type Task struct {
 	Comments                  string `form:"comments"`
 	Priority                  string `form:"priority"`
 	CreditCard                string `form:"credit_card"`
+	Rib                       string `form:"rib"`
+	BankAccountNumber         string `form:"bank_account_number"`
 	EstimantOrigine           string `form:"origin_estimator"`
 	Project                   string `form:"project"`
-	CreatedAt                 string // No form tag needed as this will be set on the server-side
+	CreatedAt                 string `form:"create_date"` // No form tag needed as this will be set on the server-side
 	UpdatedAt                 string `form:"update_date"`
+	Archived                  string
 }

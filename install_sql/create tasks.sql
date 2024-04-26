@@ -1,5 +1,6 @@
 CREATE TABLE tasks (
     id                        SERIAL PRIMARY KEY,
+    taskID                    VARCHAR(255),
     title                     VARCHAR(255),
     description               VARCHAR(255),
     assigned_to               VARCHAR(255),
@@ -16,9 +17,13 @@ CREATE TABLE tasks (
     task_responsible          VARCHAR(255),
     comments                  VARCHAR(255),
     priority                  VARCHAR(50),
-    credit_card               VARCHAR(3),
-    estimant_origine          VARCHAR(255),
+    credit_card               VARCHAR(255),
+    rib                       VARCHAR(255),
+    bank_account_number       VARCHAR(255),
+    origin_estimator          VARCHAR(255),
     project                   VARCHAR(255),
     created_at                VARCHAR(255),
-    updated_at                VARCHAR(255)
+    updated_at                VARCHAR(255),
+    archived                  VARCHAR(1) DEFAULT '0'
 );
+

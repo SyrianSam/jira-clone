@@ -1,99 +1,121 @@
 <form id="taskForm" hx-post="/task/details/{{ .Task.ID }}" hx-target="#taskList">
-    <!-- General Information Section -->
     <fieldset>
-        <legend>General</legend>
-        <label>Title:</label>
-        <p>
-           <input type="text" name="title" value="{{ .Task.Title }}">
-        </p>
-        <label>Etat:</label>
-           <select name="state">
-                <option value="En Cours">En Cours</option>
-                <option value="A Faire">A Faire</option>
-                <option value="Terminé">Terminé</option>
-           </select>
-        <p>
-            <label>Description:</label>
-            <textarea name="description">{{ .Task.Description }}</textarea>
-        </p>
-    </fieldset>
+        <legend>Task Details</legend>
 
-    <!-- Additional Information Section -->
-    <fieldset>
-        <legend>Informations</legend>
         <p>
-            <label>Carte de Crédit:</label>
+            <input type="checkbox" id="title-pin">
+            <label for="title-pin">Title:</label>
+            <input type="text" name="title" placeholder="KBB-45" required  value="{{ .Task.Title }}">
+        </p>
+
+        <p>
+            <input type="checkbox" id="state-pin">
+            <label for="state-pin">État:</label>
+            <select name="state">
+                <option value="A Faire" {{if eq $.Task.State "A Faire"}}selected{{end}}>À Faire</option>
+                <option value="En Cours" {{if eq $.Task.State "En Cours"}}selected{{end}}>En Cours</option>
+                <option value="Terminé" {{if eq $.Task.State "Terminé"}}selected{{end}}>Terminé</option>
+            </select>
+        </p>
+
+        <p>
+            <input type="checkbox" id="credit-card-pin">
+            <label for="credit-card-pin">Carte de Crédit:</label>
             <select name="credit_card">
-                <option value="oui">Oui</option>
-                <option value="non">Non</option>
+                <option value="oui" {{if eq .Task.CreditCard "oui"}}selected{{end}}>Oui</option>
+                <option value="non" {{if eq .Task.CreditCard "non"}}selected{{end}}>Non</option>
             </select>
         </p>
-        <p>
-            <label>Régularisation Bancaire:</label>
-            <select name="regulatory_compliance_check">
-                <option value="true" {{ if .Task.RegulatoryComplianceCheck }}selected{{ end }}>OK</option>
-                <option value="false" {{ if not .Task.RegulatoryComplianceCheck }}selected{{ end }}>KO</option>
-            </select>
         </p>
-        <p>
-            <label>Conformité Contractuelle:</label>
-            <select name="contract_compliance">
-                <option value="true" {{ if .Task.ContractCompliance }}selected{{ end }}>true</option>
-                <option value="false" {{ if not .Task.ContractCompliance }}selected{{ end }}>false</option>
-            </select>
-        </p>
-        <p>
-            <label>Responsable:</label>
-            <input type="text" name="task_responsible" value="{{ .Task.TaskResponsible }}">
-        </p>
-        <p>
-            <label>Rapporteur:</label>
-            <input type="text" name="task_creator" value="{{ .Task.TaskCreator }}">
-        </p>
-        <p>
-            <label>Ville:</label>
-            <input type="text" name="city" value="{{ .Task.City }}">
-        </p>
-        <p>
-            <label>Prénom:</label>
-            <input type="text" name="first_name" value="{{ .Task.FirstName }}">
-        </p>
-        <p>
-            <label>Email:</label>
-            <input type="email" name="email" value="{{ .Task.Email }}">
-        </p>
-        <p>
-            <label>Code Postal:</label>
-            <input type="text" name="postal_code" value="{{ .Task.PostalCode }}">
-        </p>
-        <p>
-            <label>Priorité:</label>
-            <input type="text" name="priority" value="">
-        </p>
-        <p>
-            <label>Birth Date</label>
-            <input type="date" name="birth_date" value="{{ .Task.BirthDate }}">
-        </p>
-    </fieldset>
 
-    <!-- More Fields Section -->
-    <fieldset>
-        <legend>Plus de champs</legend>
         <p>
-            <label>Estimant d Origine:</label>
-            <input type="text" name="origin_estimator" value="{{ .Task.EstimantOrigine }}">
+            <input type="checkbox" id="rib-pin">
+            <label for="rib-pin">RIB:</label>
+            <select name="rib">
+                <option value="oui" {{if eq .Task.Rib "oui"}}selected{{end}}>Oui</option>
+                <option value="non" {{if eq .Task.Rib "non"}}selected{{end}}>Non</option>
+            </select>
+        </p>
+
+        <p>
+            <input type="checkbox" id="contract-compliance-pin">
+            <label for="contract-compliance-pin">Conformité Contractuelle:</label>
+            <select name="contract_compliance">
+                <option value="conforme" {{if eq .Task.ContractCompliance "conforme"}}selected{{end}}>Conforme</option>
+                <option value="non conforme" {{if eq .Task.ContractCompliance "non conforme"}}selected{{end}}>Non Conforme</option>
+            </select>
+        </p>
+
+        <p>
+            <input type="checkbox" id="regulatory-check-pin">
+            <label for="regulatory-check-pin">Demande vérification régulation bancaire:</label>
+            <button type="button">Vérifier</button>
+        </p>
+
+        <p>
+            <input type="checkbox" id="bank-account-pin">
+            <label for="bank-account-pin">Bank Account Number:</label>
+            <input type="text" name="bank_account_number" value="{{ .Task.BankAccountNumber }}" readonly>
+        </p>
+
+
+        <p>
+            <label for="assigned-to-pin">Assigned to:</label>
+            <input type="text" name="assigned_to" value="{{.Task.AssignedTo }}" list="users" hx-get="/users?q={value}" hx-trigger="keyup changed delay:500" hx-target="#users" autocomplete="off"/>
+            <datalist id="users">
+                <!-- users will be populated by htmx -->
+            </datalist>
+        </p>
+
+        <p>
+            <input type="checkbox" id="city-pin">
+            <label for="city-pin">Ville:</label>
+            <input type="text" name="city" value="{{ .Task.City }}" required>
+        </p>
+
+        <p>
+            <input type="checkbox" id="first-name-pin">
+            <label for="first-name-pin">Prénom:</label>
+            <input type="text" name="first_name"  value="{{ .Task.FirstName }}" required>
+        </p>
+        
+
+        <p>
+            <input type="checkbox" id="email-pin">
+            <label for="email-pin">Email:</label>
+            <input type="email" name="email" value="{{ .Task.Email }}" required>
+        </p>
+
+        <p>
+            <input type="checkbox" id="postal-code-pin">
+            <label for="postal-code-pin">Code Postal:</label>
+            <input type="text" name="postal_code" value="{{ .Task.PostalCode }}" required pattern="\d{5}">
+        </p>
+
+        <p>
+            <input type="checkbox" id="priority-pin">
+            <label for="priority-pin">Priorité:</label>
+            <select name="priority">
+                <option value="low" {{if eq .Task.Priority "low"}}selected{{end}}>Low</option>
+                <option value="regular" {{if eq .Task.Priority "regular"}}selected{{end}}>Regular</option>
+                <option value="urgent" {{if eq .Task.Priority "urgent"}}selected{{end}}>Urgent</option>
+            </select>
+        </p>
+        </p>
+
+        <p>
+            <input type="checkbox" id="birth-date-pin">
+            <label for="birth-date-pin">Birth Date:</label>
+            <input type="date" name="birth_date" required value="{{ .Task.BirthDate }}">
+        </p>
+
+        <p>
+            <label>Created at:</label>
+            <input type="text" value="{{ .Task.CreatedAt }}" readonly>
         </p>
         <p>
-            <label>Projet:</label>
-            <input type="text" name="project" value="{{ .Task.Project }}">
-        </p>
-        <p>
-            <label>Création:</label>
-            <input type="date" name="creation_date" value="{{ .Task.CreatedAt }}">
-        </p>
-        <p>
-            <label>Mise à jour:</label>
-            <input type="date" name="update_date" value="{{ .Task.UpdatedAt }}">
+            <label>Last modification:</label>
+            <input type="text" value="{{ .Task.UpdatedAt }}" readonly>
         </p>
     </fieldset>
 

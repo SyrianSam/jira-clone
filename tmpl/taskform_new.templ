@@ -1,100 +1,104 @@
 <form id="taskForm" hx-post="/create-task" hx-target="#taskList">
-    <!-- General Information Section -->
     <fieldset>
-        <legend>General</legend>
-        <label>Title:</label>
-        <p>
-           <input type="text" name="title" value=" {{ .Task.Title }}">
-        </p>
-        <label>Etat:</label>
-           <select name="state">
-                <option value="En Cours">En Cours</option>
-                <option value="A Faire">A Faire</option>
-                <option value="Terminé">Terminé</option>
-           </select>
-        <p>
-            <label>Description:</label>
-            <textarea name="description">{{ .Task.Description }}</textarea>
-        </p>
-    </fieldset>
+        <legend>Task Details</legend>
 
-    <!-- Additional Information Section -->
-    <fieldset>
-        <legend>Informations</legend>
         <p>
-            <label>Carte de Crédit:</label>
+            <input type="checkbox" id="state-pin">
+            <label for="state-pin">État:</label>
+            <select name="state">
+                <option value="A Faire">À Faire</option>
+                <option value="En Cours">En Cours</option>
+                <option value="Terminé">Terminé</option>
+            </select>
+        </p>
+
+        <p>
+            <input type="checkbox" id="credit-card-pin">
+            <label for="credit-card-pin">Carte de Crédit:</label>
             <select name="credit_card">
                 <option value="oui">Oui</option>
                 <option value="non">Non</option>
             </select>
         </p>
-        <p>
-            <label>Régularisation Bancaire:</label>
-            <select name="regulatory_compliance_check">
-                <option value="true" {{ if .Task.RegulatoryComplianceCheck }}selected{{ end }}>OK</option>
-                <option value="false" {{ if not .Task.RegulatoryComplianceCheck }}selected{{ end }}>KO</option>
-            </select>
-        </p>
-        <p>
-            <label>Conformité Contractuelle:</label>
-            <select name="contract_compliance">
-                <option value="true" {{ if .Task.ContractCompliance }}selected{{ end }}>Oui</option>
-                <option value="false" {{ if not .Task.ContractCompliance }}selected{{ end }}>Non</option>
-            </select>
-        </p>
-        <p>
-            <label>Responsable:</label>
-            <input type="text" name="task_responsible" value="{{ .Task.TaskResponsible }}">
-        </p>
-        <p>
-            <label>Rapporteur:</label>
-            <input type="text" name="task_creator" value="{{ .Task.TaskCreator }}">
-        </p>
-        <p>
-            <label>Ville:</label>
-            <input type="text" name="city" value="{{ .Task.City }}">
-        </p>
-        <p>
-            <label>Prénom:</label>
-            <input type="text" name="first_name" value="{{ .Task.FirstName }}">
-        </p>
-        <p>
-            <label>Email:</label>
-            <input type="email" name="email" value="{{ .Task.Email }}">
-        </p>
-        <p>
-            <label>Code Postal:</label>
-            <input type="text" name="postal_code" value="{{ .Task.PostalCode }}">
-        </p>
-        <p>
-            <label>Priorité:</label>
-            <input type="text" name="priority" value="">
-        </p>
-        <p>
-            <label>Birth Date</label>
-            <input type="date" name="birth_date" value="{{ .Task.BirthDate }}" required>
-        </p>
-    </fieldset>
 
-    <!-- More Fields Section -->
-    <fieldset>
-        <legend>Plus de champs</legend>
         <p>
-            <label>Estimant d Origine:</label>
-            <input type="text" name="origin_estimator" value="{{ .Task.EstimantOrigine }}">
+            <input type="checkbox" id="rib-pin">
+            <label for="rib-pin">RIB:</label>
+            <select name="rib">
+                <option value="oui">Oui</option>
+                <option value="non">Non</option>
+            </select>
         </p>
+
         <p>
-            <label>Projet:</label>
-            <input type="text" name="project" value="{{ .Task.Project }}">
+            <input type="checkbox" id="contract-compliance-pin">
+            <label for="contract-compliance-pin">Conformité Contractuelle:</label>
+            <select name="contract_compliance">
+                <option value="conforme">Conforme</option>
+                <option value="non conforme">Non Conforme</option>
+            </select>
         </p>
+
         <p>
-            <label>Création:</label>
-            <input type="date" name="creation_date" value="{{ .Task.CreatedAt }}">
+            <input type="checkbox" id="regulatory-check-pin">
+            <label for="regulatory-check-pin">Demande vérification régulation bancaire:</label>
+            <button type="button">Vérifier</button>
         </p>
+
         <p>
-            <label>Mise à jour:</label>
-            <input type="date" name="update_date" value="{{ .Task.UpdatedAt }}">
+            <input type="checkbox" id="bank-account-pin">
+            <label for="bank-account-pin">Bank Account Number:</label>
+            <input type="text" name="bank_account_number" value="automatically generated" readonly>
         </p>
+
+        <p>
+            <label for="assigned-to-pin">Assigned to:</label>
+            <input type="text" name="assigned_to" list="users" hx-get="/users?q={value}" hx-trigger="keyup changed delay:500" hx-target="#users" autocomplete="off"/>
+            <datalist id="users">
+                <!-- users will be populated by htmx -->
+            </datalist>
+        </p>
+
+        <p>
+            <input type="checkbox" id="city-pin">
+            <label for="city-pin">Ville:</label>
+            <input type="text" name="city" required>
+        </p>
+
+        <p>
+            <input type="checkbox" id="first-name-pin">
+            <label for="first-name-pin">Prénom:</label>
+            <input type="text" name="first_name" required>
+        </p>
+
+        <p>
+            <input type="checkbox" id="email-pin">
+            <label for="email-pin">Email:</label>
+            <input type="email" name="email" required>
+        </p>
+
+        <p>
+            <input type="checkbox" id="postal-code-pin">
+            <label for="postal-code-pin">Code Postal:</label>
+            <input type="text" name="postal_code" required pattern="\d{5}">
+        </p>
+
+        <p>
+            <input type="checkbox" id="priority-pin">
+            <label for="priority-pin">Priorité:</label>
+            <select name="priority">
+                <option value="low">Low</option>
+                <option value="regular">Regular</option>
+                <option value="urgent">Urgent</option>
+            </select>
+        </p>
+
+        <p>
+            <input type="checkbox" id="birth-date-pin">
+            <label for="birth-date-pin">Birth Date:</label>
+            <input type="date" name="birth_date" required>
+        </p>
+
     </fieldset>
 
     <button type="submit">Create Task</button>
