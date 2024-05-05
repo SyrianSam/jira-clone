@@ -68,6 +68,15 @@
             background-color: #45a049; /* Darker green on hover */
         }
 
+        button[disabled] {
+           cursor: not-allowed; /* change cursor to indicate it's not clickable */
+           background-color: grey; /* Light gray background */
+        }       
+        button[disabled]:hover {
+           cursor: not-allowed; /* change cursor to indicate it's not clickable */
+           background-color: grey; /* Light gray background */
+        }  
+
         .dashboard-container {
             display: flex; /* Set the dashboard container to use flex */
             flex-grow: 1; /* Allow it to take up the remaining height */
@@ -305,25 +314,32 @@
         </div>
     </header>
     <div class="dashboard-container">
-    <div class="left-column" id="taskList">
+    <div class="left-column" >
 
     <div class="tasks-header">
         <h2>Tasks List</h2>
         <button class="new-task-button" hx-post="/task/new" hx-target="#taskDetails" hx-trigger="click">Create New Task</button>
     </div>
-        <div>
+<form hx-get="/task/search" hx-target="#taskList" hx-trigger="input delay:500ms">
+    <input type="search" name="searchTerm" placeholder="Search tasks by name..." autocomplete="off">
+</form>
+
+
 <form id="filter" hx-get="/task/showAll" hx-target="#taskList" hx-trigger="change">
     <select name="filter">
         <option value="all" {{if eq .filter "all"}}selected{{end}}>All Tasks</option>
         <option value="my" {{if eq .filter "my"}}selected{{end}}>My Tasks</option>
-        {{if eq .userID 1}}
+        {{if eq .userRole "1"}}
             <option value="archived" {{if eq .filter "archived"}}selected{{end}}>Archived Tasks</option>
         {{end}}
     </select>
 </form>
 
+<div id="taskList">
+
+
     <span id="task-list-indicator"></span>
-</div>
+
 
     <div>
         {{ range .tasks }}
@@ -345,7 +361,7 @@
         {{ end }}
     </div>
 
-
+</div>
 
     </div>
     <div class="right-column">

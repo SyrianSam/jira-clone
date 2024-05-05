@@ -54,6 +54,8 @@ func (h *Handler) SetupRoutes(router *gin.Engine) {
 	router.GET("/users", h.SearchUsers)
 	router.GET("/create-account", h.CreateAccountRoute)
 	router.POST("/create-account", h.CreateAccount)
+	router.GET("/task/search", h.SearchTasks)
+	router.POST("/bankaccount/generate", h.generateBankAccountNumber)
 
 }
 
@@ -67,6 +69,22 @@ func (h *Handler) SearchUsers(c *gin.Context) {
 	c.HTML(http.StatusOK, "assigned_to_list.templ", gin.H{"users": users})
 }
 
+func (h *Handler) SearchTasks(c *gin.Context) {
+
+	q := c.Query("searchTerm")
+
+	q = strings.ToUpper(q)
+	log.Printf(q)
+	tasks, err := h.store.FindTasksByName(q)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Failed to search tasks")
+		return
+	}
+
+	c.HTML(http.StatusOK, "taskList.templ", gin.H{"tasks": tasks})
+
+}
+
 func (h *Handler) ShowLogin(c *gin.Context) {
 	c.HTML(http.StatusOK, "login.templ", nil)
 }
@@ -77,14 +95,17 @@ func (h *Handler) HandleLogin(c *gin.Context) {
 
 	user, err := h.store.VerifyUser(username, password)
 	if err != nil {
+		log.Printf("error verifying user: %v", err)
 		// Handle different kinds of errors appropriately
-		c.HTML(http.StatusInternalServerError, "login.templ", gin.H{"Error": "Server error"})
+		c.HTML(http.StatusInternalServerError, "login.templ", gin.H{"Error": "Incorrect username or password"})
 		return
 	}
-
 	session := sessions.Default(c)
 	session.Set("user_id", user.ID)
+	session.Set("userRole", user.Role)
 	session.Save()
+
+	log.Printf("user data: %v", user)
 
 	c.Redirect(http.StatusFound, "/dashboard")
 }
@@ -100,6 +121,9 @@ func AuthRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session := sessions.Default(c)
 		userID := session.Get("user_id")
+		userRole := session.Get("userRole")
+		log.Printf("authrequired userRole: %v", userRole)
+		log.Printf("authrequired: %v", userID)
 		if userID == nil {
 			c.Redirect(http.StatusFound, "/login")
 			c.Abort()
@@ -111,8 +135,20 @@ func AuthRequired() gin.HandlerFunc {
 
 func (h *Handler) ShowDashboard(c *gin.Context) {
 
+	log.Printf("What the hell is going on?")
 	session := sessions.Default(c)
 	userID := session.Get("user_id")
+	userRole := session.Get("userRole")
+	userIDVal, ok := session.Get("user_id").(int)
+	if !ok {
+		log.Printf("ok: %v", ok)
+		return
+	}
+
+	log.Printf("userID val: %v", userIDVal)
+	// userProfile, err := h.store.GetUserById(1)
+	log.Printf("userRole.id: %v", userRole)
+
 	tasks, err := h.store.GetTasks()
 	if err != nil {
 		// Log the error and handle it appropriately
@@ -124,7 +160,7 @@ func (h *Handler) ShowDashboard(c *gin.Context) {
 
 	filteredTasks, _ := h.filterTasklist(c, tasks, "all")
 	// If no error, render the dashboard with the tasks
-	c.HTML(http.StatusOK, "dashboard.templ", gin.H{"tasks": filteredTasks, "filter": "all", "userID": userID})
+	c.HTML(http.StatusOK, "dashboard.templ", gin.H{"tasks": filteredTasks, "filter": "all", "userID": userID, "userRole": userRole})
 }
 func (h *Handler) filterTasklist(c *gin.Context, tasks []model.Task, filter string) ([]model.Task, error) {
 
@@ -281,6 +317,8 @@ func (h *Handler) DeleteTask(c *gin.Context) {
 
 func (h *Handler) ShowTaskForm(c *gin.Context) {
 
+	session := sessions.Default(c)
+	userRole := session.Get("userRole")
 	// Retrieve the task ID from the route parameter
 	taskID := c.Param("id")
 	if taskID == "" {
@@ -308,7 +346,7 @@ func (h *Handler) ShowTaskForm(c *gin.Context) {
 	}
 	log.Printf("%s", task.State)
 	// Render the task form with the task data
-	c.HTML(http.StatusOK, "taskform.templ", gin.H{"Task": task})
+	c.HTML(http.StatusOK, "taskform.templ", gin.H{"Task": task, "UserRole": userRole})
 }
 
 func (h *Handler) CreateTask(c *gin.Context) {
@@ -357,7 +395,15 @@ func (h *Handler) ShowTasks(c *gin.Context) {
 	// Call the renderTaskList function with the determined filter
 	h.renderTaskList(c, filter)
 }
+func (h *Handler) generateBankAccountNumber(c *gin.Context) {
+	// Generate the bank account number using the store
+	accountNumber := h.store.GenerateBankAccountNumber()
 
+	// Set the generated value as the value of the input field
+	c.HTML(http.StatusOK, "ban.templ", gin.H{
+		"BankAccountNumber": accountNumber,
+	})
+}
 func (h *Handler) InsertTask(c *gin.Context) {
 	var task model.Task
 

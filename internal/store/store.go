@@ -33,10 +33,11 @@ func NewDB(dataSourceName string) (*sql.DB, error) {
 
 func (s *Store) VerifyUser(username, password string) (*model.User, error) {
 	var user model.User
-	err := s.db.QueryRow("SELECT id, username, password FROM users WHERE username = $1", username).Scan(&user.ID, &user.Username, &user.Password)
+	err := s.db.QueryRow("SELECT id, username, password , heirarchy FROM users WHERE username = $1", username).Scan(&user.ID, &user.Username, &user.Password, &user.Role)
 	fmt.Println(user.ID)
 	fmt.Println(user.Password)
 	fmt.Println(user.Username)
+	fmt.Println(user.Role)
 	if err != nil {
 		return nil, err
 	}
@@ -57,10 +58,22 @@ func (s *Store) CreateUser(username string, password string) error {
 	}
 	return nil
 }
+func (s *Store) GetUserById(userID int) (*model.User, error) {
+	var user model.User
+	err := s.db.QueryRow("SELECT id, username, password, heirarchy FROM users WHERE id = $1", userID).Scan(&user.ID, &user.Username, &user.Password, &user.Role)
+	if err != nil {
+		log.Printf("%s", err.Error())
+		return nil, err
+	}
+
+	log.Printf(user.Role)
+	log.Printf(user.Username)
+	return &user, nil
+}
 
 func (s *Store) GetUserByUsername(username string) (*model.User, error) {
 	var user model.User
-	err := s.db.QueryRow("SELECT id, username, password, role FROM users WHERE username = $1", username).Scan(&user.ID, &user.Username, &user.Password, &user.Role)
+	err := s.db.QueryRow("SELECT id, username, password, heirarchy FROM users WHERE username = $1", username).Scan(&user.ID, &user.Username, &user.Password, &user.Role)
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +134,38 @@ func (s *Store) GetTaskByID(id int) (*model.Task, error) {
 		return nil, err
 	}
 	return &task, nil
+}
+
+func (s *Store) FindTasksByName(name string) ([]*model.Task, error) {
+
+	// Prepare a slice to hold the tasks
+	var tasks []*model.Task
+	// Use SQL LIKE operator to match task names that contain the provided name anywhere in the title
+	// Use '%' wildcards to match any sequence of characters before and after the name
+	rows, err := s.db.Query(`
+        SELECT id, title, description, assigned_to, state, first_name, last_name, birth_date, email, postal_code, city, regulatory_compliance_check, contract_compliance, task_creator, task_responsible, comments, priority, credit_card, created_at, COALESCE(updated_at, ''), bank_account_number
+        FROM tasks WHERE title LIKE '%' || $1 || '%' AND archived != '1'`, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Iterate through all returned rows
+	for rows.Next() {
+		var task model.Task
+		err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.AssignedTo, &task.State, &task.FirstName, &task.LastName, &task.BirthDate, &task.Email, &task.PostalCode, &task.City, &task.RegulatoryComplianceCheck, &task.ContractCompliance, &task.TaskCreator, &task.TaskResponsible, &task.Comments, &task.Priority, &task.CreditCard, &task.CreatedAt, &task.UpdatedAt, &task.BankAccountNumber)
+		if err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, &task)
+	}
+
+	// Check for errors from iterating over rows
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }
 
 func (s *Store) CreateTask(task model.Task) error {

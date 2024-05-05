@@ -54,9 +54,17 @@
 
         <p>
             <input type="checkbox" id="bank-account-pin">
-            <label for="bank-account-pin">Bank Account Number:</label>
-            <input type="text" name="bank_account_number" value="{{ .Task.BankAccountNumber }}" readonly>
+            <label for="bank-account-pin">Bank Account Number:</label>  
+            <button id="generate-account-number" {{ if not (or (eq .UserRole "1") (eq .UserRole "2")) }} disabled{{ end }} hx-post="/bankaccount/generate" hx-trigger="click" hx-target="#banContainer">
+                Generate Account Number
+            </button>
+            <div id="banContainer">
+                <input type="text" name="bank_account_number" id="bank_account_number_input" value="{{ .Task.BankAccountNumber }}"  {{ if not (or (eq .UserRole "1") (eq .UserRole "2")) }} readonly{{ end }} >
+            </div>
+
         </p>
+
+       
 
 
         <p>
