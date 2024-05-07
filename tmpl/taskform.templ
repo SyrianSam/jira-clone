@@ -46,11 +46,31 @@
             </select>
         </p>
 
+        
+
+        <p>
+            <input type="checkbox" id="first-name-pin">
+            <label for="first-name-pin">Prénom:</label>
+            <input type="text" name="first_name" value="{{ .Task.FirstName }}" required>
+        </p>
+        <p>
+            <input type="checkbox" id="last-name-pin">
+            <label for="last-name-pin">Nom:</label>
+            <input type="text" name="last_name"  value="{{ .Task.LastName }}" required>
+        </p>
         <p>
             <input type="checkbox" id="regulatory-check-pin">
             <label for="regulatory-check-pin">Demande vérification régulation bancaire:</label>
-            <button type="button">Vérifier</button>
-        </p>
+            <button type="button"
+                hx-post="/verify-names"
+                hx-include="[name='first_name'], [name='last_name']"
+                hx-target="#verification-results"
+                hx-trigger="click">
+            Vérifier
+            </button>
+            <div id="verification-results" name="verification-results">
+                <input type="text" name="regulatory_compliance_check"  value="{{ .Task.RegulatoryComplianceCheck }}" readonly>
+            </div>
 
         <p>
             <input type="checkbox" id="bank-account-pin">
@@ -81,11 +101,7 @@
             <input type="text" name="city" value="{{ .Task.City }}" required>
         </p>
 
-        <p>
-            <input type="checkbox" id="first-name-pin">
-            <label for="first-name-pin">Prénom:</label>
-            <input type="text" name="first_name"  value="{{ .Task.FirstName }}" required>
-        </p>
+
         
 
         <p>

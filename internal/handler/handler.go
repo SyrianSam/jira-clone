@@ -56,7 +56,36 @@ func (h *Handler) SetupRoutes(router *gin.Engine) {
 	router.POST("/create-account", h.CreateAccount)
 	router.GET("/task/search", h.SearchTasks)
 	router.POST("/bankaccount/generate", h.generateBankAccountNumber)
+	router.POST("/verify-names", h.VerifyNames)
+}
 
+func (h *Handler) UpdateFieldOrder(c *gin.Context) {
+
+	session := sessions.Default(c)
+	userID := session.Get("user_id").(int)
+	fieldOrder := c.PostForm("field_order")
+
+	err := h.store.UpdateFieldOrder(userID, fieldOrder)
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"message": "Failed to update field order"})
+		return
+	}
+
+	c.Redirect(http.StatusSeeOther, "/form") // Redirect to form page or refresh
+}
+
+func (h *Handler) VerifyNames(c *gin.Context) {
+	firstName := c.PostForm("first_name")
+	lastName := c.PostForm("last_name")
+
+	verified, err := h.store.VerifyRegularity(firstName, lastName) // Assume this function checks the names
+	if err != nil {
+		// c.HTML(http.StatusBadRequest, "error.html", gin.H{"message": "Verification failed", "details": err.Error()})
+		log.Printf("error verifying regularity: %v", err.Error())
+		return
+	}
+
+	c.HTML(http.StatusOK, "compliance_check.templ", gin.H{"verified": verified})
 }
 
 func (h *Handler) SearchUsers(c *gin.Context) {
@@ -428,7 +457,7 @@ func (h *Handler) InsertTask(c *gin.Context) {
 	now := time.Now()
 	task.CreatedAt = now.Format("2006-01-02 15:04:05")
 	task.Title = h.store.GenerateTitle()
-	task.BankAccountNumber = h.store.GenerateBankAccountNumber()
+	// task.BankAccountNumber = h.store.GenerateBankAccountNumber()
 
 	parts := strings.Split(task.AssignedTo, "-")
 	if len(parts) != 2 {

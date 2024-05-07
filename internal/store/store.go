@@ -7,6 +7,8 @@ import (
 	"log"
 	"math/rand"
 
+	"github.com/tealeg/xlsx"
+
 	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
@@ -168,6 +170,12 @@ func (s *Store) FindTasksByName(name string) ([]*model.Task, error) {
 	return tasks, nil
 }
 
+func (s *Store) UpdateFieldOrder(userID int, fieldOrder string) error {
+	// Assuming db is a *sql.DB
+	_, err := s.db.Exec("UPDATE user_preferences SET field_order = ? WHERE user_id = ?", fieldOrder, userID)
+	return err
+}
+
 func (s *Store) CreateTask(task model.Task) error {
 	log.Printf("task.BankAccountNumber")
 	log.Printf(task.BankAccountNumber)
@@ -197,6 +205,7 @@ func (s *Store) UpdateTask(task *model.Task) error {
 	log.Printf("update_at: %s", task.UpdatedAt)
 	log.Printf("Title: %s", task.Title)
 	log.Printf("ID: %d", task.ID)
+	log.Printf("lastName: %s", task.LastName)
 	query := `UPDATE tasks SET
         title=$1, description=$2, state=$3, first_name=$4, last_name=$5,
         birth_date=$6, email=$7, postal_code=$8, city=$9, 
@@ -210,9 +219,47 @@ func (s *Store) UpdateTask(task *model.Task) error {
 		task.ContractCompliance, task.TaskCreator, task.TaskResponsible,
 		task.Comments, task.Priority, task.CreditCard, task.UpdatedAt, task.BankAccountNumber, task.ID)
 
-	return err
+	if err != nil {
+		log.Printf("the error in update Task: %v", err.Error())
+		return err
+	}
+
+	return nil
 }
 
+func (s *Store) VerifyRegularity(firstName, lastName string) (bool, error) {
+	// Load the XLSX file
+	wb, err := xlsx.OpenFile("NOK.xlsx")
+	if err != nil {
+		return false, err // Handle error if the file cannot be opened
+	}
+
+	// Assume the relevant data is in the first sheet
+	sheet := wb.Sheets[0]
+
+	// Iterate through rows, assuming first row is the header
+	for i, row := range sheet.Rows {
+		if i == 0 {
+			continue // Skip header row
+		}
+		if len(row.Cells) < 3 {
+			continue // Ensure there are enough cells
+		}
+
+		// Read cells; error handling omitted for brevity
+		prenom := row.Cells[0].String()
+		nom := row.Cells[1].String()
+		// statut := row.Cells[2].String()
+
+		// Check if the row matches the provided first name and last name
+		if prenom == firstName && nom == lastName {
+			return false, nil
+		}
+	}
+
+	// Return not found or default status if no match is found
+	return true, nil
+}
 func (s *Store) GenerateTitle() string {
 	var id int
 	err := s.db.QueryRow("SELECT id FROM tasks ORDER BY id DESC LIMIT 1").Scan(&id)
