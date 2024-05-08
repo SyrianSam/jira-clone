@@ -43,7 +43,8 @@ func (h *Handler) SetupRoutes(router *gin.Engine) {
 	router.POST("/login", h.HandleLogin)
 	router.GET("/logout", h.HandleLogout)
 	router.GET("/dashboard", AuthRequired(), h.ShowDashboard)
-	router.GET("/task/details/:id", AuthRequired(), h.ShowTaskForm)
+	router.GET("/task/details/:id", AuthRequired(), h.ShowTaskFormDynamic)
+	// router.GET("/task/details/:id", AuthRequired(), h.ShowTaskForm)
 	router.POST("/task/details/:id", AuthRequired(), h.UpdateTask)
 	router.DELETE("/task/delete/:id", AuthRequired(), h.DeleteTask)
 	router.POST("/task/archive/:id", AuthRequired(), h.ArchiveTask)
@@ -57,21 +58,109 @@ func (h *Handler) SetupRoutes(router *gin.Engine) {
 	router.GET("/task/search", h.SearchTasks)
 	router.POST("/bankaccount/generate", h.generateBankAccountNumber)
 	router.POST("/verify-names", h.VerifyNames)
+	router.POST("/save-field-order", h.SaveFieldOrder)
 }
-
-func (h *Handler) UpdateFieldOrder(c *gin.Context) {
-
+func (h *Handler) SaveFieldOrder(c *gin.Context) {
 	session := sessions.Default(c)
-	userID := session.Get("user_id").(int)
-	fieldOrder := c.PostForm("field_order")
-
-	err := h.store.UpdateFieldOrder(userID, fieldOrder)
-	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"message": "Failed to update field order"})
+	userID, ok := session.Get("user_id").(int)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID not found in session"})
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, "/form") // Redirect to form page or refresh
+	// Define the default field order
+	defaultFieldOrderString := "title-section,state-section,credit-card-section,rib-section,contract-compliance-section,first-name-section,last-name-section,regulatory-check-section,bank-account-section,assigned-to-section,city-section,email-section,postal-code-section,priority-section,birth-date-section,created-at-section,last-modification-section"
+	defaultOrderSlice := strings.Split(defaultFieldOrderString, ",")
+
+	// Retrieve the current pinned fields from the database.
+	pinnedFields, err := h.store.GetFieldOrder(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current field order"})
+		return
+	}
+
+	// Convert pinned fields string to slice.
+	pinnedFieldsSlice := strings.Split(pinnedFields, ",")
+
+	// Get checked pin ID from the form.
+	checkedPin := c.PostForm("divId")
+	log.Printf("Checked divID: %v", checkedPin)
+
+	// Determine whether the checked pin is already in the pinned fields.
+	found := false
+	for i, pin := range pinnedFieldsSlice {
+		if pin == checkedPin {
+			// If found, remove it from the slice.
+			pinnedFieldsSlice = append(pinnedFieldsSlice[:i], pinnedFieldsSlice[i+1:]...)
+			found = true
+			break
+		}
+	}
+
+	// If the checked pin is not found in the list, append it.
+	if !found && checkedPin != "" {
+		pinnedFieldsSlice = append(pinnedFieldsSlice, checkedPin)
+	}
+
+	// Update the pinned fields in the database with possibly updated list.
+	updatedPinnedFields := strings.Join(pinnedFieldsSlice, ",")
+	err = h.store.SaveFieldOrder(userID, updatedPinnedFields)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update field order"})
+		return
+	}
+
+	// Determine remaining fields by excluding pinned fields from the default fields
+	remainingFields := make([]string, 0)
+	pinnedFieldsMap := sliceToMap(pinnedFieldsSlice)
+	for _, field := range defaultOrderSlice {
+		if !pinnedFieldsMap[field] {
+			remainingFields = append(remainingFields, field)
+		}
+	}
+
+	log.Printf("Pinned fields for display: %v", pinnedFields)
+	log.Printf("Remaining fields for display: %v", remainingFields)
+
+	// Retrieve task ID from the session and handle errors
+	taskID, ok := session.Get("task_id").(int)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Task ID not found in session"})
+		return
+	}
+
+	// Load task details and handle errors
+	task, err := h.store.GetTaskByID(taskID)
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"message": "Failed to load task"})
+		return
+	}
+
+	// Rerender the task form with the updated field lists.
+	c.HTML(http.StatusOK, "taskformDynamic.templ", gin.H{
+		"Task":            task,
+		"PinnedFields":    pinnedFieldsSlice,
+		"RemainingFields": remainingFields,
+	})
+}
+
+// Helper function to check if a slice contains a string
+func contains(slice []string, str string) bool {
+	for _, v := range slice {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}
+
+// Helper function to convert a slice to a map for quick lookup
+func sliceToMap(slice []string) map[string]bool {
+	result := make(map[string]bool)
+	for _, item := range slice {
+		result[item] = true
+	}
+	return result
 }
 
 func (h *Handler) VerifyNames(c *gin.Context) {
@@ -103,7 +192,6 @@ func (h *Handler) SearchTasks(c *gin.Context) {
 	q := c.Query("searchTerm")
 
 	q = strings.ToUpper(q)
-	log.Printf(q)
 	tasks, err := h.store.FindTasksByName(q)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Failed to search tasks")
@@ -342,6 +430,58 @@ func (h *Handler) DeleteTask(c *gin.Context) {
 
 	c.Redirect(http.StatusSeeOther, "/task/showAll")
 
+}
+
+func (h *Handler) ShowTaskFormDynamic(c *gin.Context) {
+	session := sessions.Default(c)
+	userID := session.Get("user_id").(int)
+	taskIDParam := c.Param("id") // Assumes task ID is a route parameter
+
+	taskID, err := strconv.Atoi(taskIDParam)
+	if err != nil {
+		log.Printf("Invalid task ID format: %v", err)
+		c.HTML(http.StatusBadRequest, "error.html", gin.H{"message": "Invalid task ID format"})
+		return
+	}
+	session.Set("task_id", taskID)
+	session.Save()
+
+	task, err := h.store.GetTaskByID(taskID) // Retrieve the task details
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"message": "Failed to load task"})
+		return
+	}
+
+	order, err := h.store.GetFieldOrder(userID) // Retrieve field order for the user
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"message": "Failed to load field order"})
+		return
+	}
+
+	defaultFieldOrderString := "title-section,state-section,credit-card-section,rib-section,contract-compliance-section,first-name-section,last-name-section,regulatory-check-section,bank-account-section,assigned-to-section,city-section,email-section,postal-code-section,priority-section,birth-date-section,created-at-section,last-modification-section"
+	defaultFields := strings.Split(defaultFieldOrderString, ",")
+
+	pinnedFields := strings.Split(order, ",")
+	pinnedFieldsMap := make(map[string]bool)
+	for _, field := range pinnedFields {
+		pinnedFieldsMap[field] = true
+	}
+
+	remainingFields := make([]string, 0)
+	for _, field := range defaultFields {
+		if !pinnedFieldsMap[field] {
+			remainingFields = append(remainingFields, field)
+		}
+	}
+
+	log.Printf("Pinned fields for display: %v", pinnedFields)
+	log.Printf("Remaining fields for display: %v", remainingFields)
+
+	c.HTML(http.StatusOK, "taskformDynamic.templ", gin.H{
+		"Task":            task,
+		"PinnedFields":    pinnedFields,
+		"RemainingFields": remainingFields,
+	})
 }
 
 func (h *Handler) ShowTaskForm(c *gin.Context) {

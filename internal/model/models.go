@@ -12,6 +12,34 @@ type UserPreference struct {
 	FieldOrder string
 }
 
+// Field represents a single form field with potential options for dropdowns, if applicable.
+type Field struct {
+	ID           string
+	Label        string
+	Type         string
+	Options      []Option
+	Value        string
+	Placeholder  string
+	Required     bool
+	ReadOnly     bool
+	ExtraHTML    string // To include additional HTML attributes like data attributes or JavaScript functions
+	Action       string // For form actions, typically used with buttons
+	Include      string // Specifies fields to include in an action, used with HTMX or AJAX
+	Target       string // Defines where to place the response of an action
+	Trigger      string // Event that triggers the action
+	List         string
+	HTMXGet      string // Assuming you're using a custom struct to handle HTMX attributes
+	HTMXTrigger  string
+	HTMXTarget   string
+	AutoComplete string
+}
+
+type Option struct {
+	Value    string
+	Display  string
+	Selected bool
+}
+
 type Task struct {
 	ID                        int    `form:"taskID"`
 	Title                     string `form:"title"`

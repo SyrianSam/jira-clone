@@ -170,10 +170,35 @@ func (s *Store) FindTasksByName(name string) ([]*model.Task, error) {
 	return tasks, nil
 }
 
-func (s *Store) UpdateFieldOrder(userID int, fieldOrder string) error {
-	// Assuming db is a *sql.DB
-	_, err := s.db.Exec("UPDATE user_preferences SET field_order = ? WHERE user_id = ?", fieldOrder, userID)
+func (s *Store) SaveFieldOrder(userID int, fieldOrder string) error {
+	// SQL statement that inserts a new row or updates it if there's a conflict on the user_id column
+	query := `
+    INSERT INTO user_preferences (user_id, field_order)
+    VALUES ($1, $2)
+    ON CONFLICT (user_id) DO UPDATE
+    SET field_order = EXCLUDED.field_order
+    `
+	_, err := s.db.Exec(query, userID, fieldOrder)
 	return err
+}
+
+func (s *Store) GetFieldOrder(userID int) (string, error) {
+	defaultFieldOrderString := "title-section,state-section,credit-card-section,rib-section,contract-compliance-section,first-name-section,last-name-section,regulatory-check-section,bank-account-section,assigned-to-section,city-section,email-section,postal-code-section,priority-section,birth-date-section,created-at-section,last-modification-section"
+
+	var fieldOrder string
+	query := "SELECT field_order FROM user_preferences WHERE user_id = $1"
+
+	err := s.db.QueryRow(query, userID).Scan(&fieldOrder)
+	if err != nil {
+		// If there's no record, we could consider returning a default order
+		if err == sql.ErrNoRows {
+			// Return default order if no specific order is stored
+			return defaultFieldOrderString, nil
+		}
+		return "", err
+	}
+
+	return fieldOrder, nil
 }
 
 func (s *Store) CreateTask(task model.Task) error {
