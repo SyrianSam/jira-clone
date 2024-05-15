@@ -15,9 +15,19 @@ func main() {
 
 	r.LoadHTMLGlob("tmpl/*")
 	r.Static("/static", "./static")
-
-	// Setup database connection (example using PostgreSQL)
+	localLaunch := 0
 	connectionString := "host=localhost port=5432 user=postgres password=soleares dbname=gira sslmode=disable"
+	// Setup database connection (example using PostgreSQL)
+	if localLaunch == 0 {
+
+		dbName := os.Getenv("PGDATABASE")
+		pgHost := os.Getenv("PGHOST")
+		pgPassword := os.Getenv("PGPASSWORD")
+		pgPort := os.Getenv("PGPORT")
+		pgUser := os.Getenv("PGUSER")
+
+		connectionString = "host=" + pgHost + " port=" + pgPort + " user=" + pgUser + " password=" + pgPassword + " dbname=" + dbName + " sslmode=disable"
+	}
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
 		log.Fatalln("Error connecting to the database:", err)

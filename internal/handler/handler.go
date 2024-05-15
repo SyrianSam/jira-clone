@@ -449,6 +449,7 @@ func (h *Handler) ShowTaskFormDynamic(c *gin.Context) {
 
 	task, err := h.store.GetTaskByID(taskID) // Retrieve the task details
 	if err != nil {
+		log.Printf("retrieve task error: %v", err)
 		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"message": "Failed to load task"})
 		return
 	}
