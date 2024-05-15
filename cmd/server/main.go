@@ -5,6 +5,7 @@ import (
 	"jira-clone/internal/handler"
 	"jira-clone/internal/store"
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,7 +35,12 @@ func main() {
 
 	// Initialize the handler with the store
 	h := handler.NewHandler(store)
+	port := os.Getenv("PORT")
+
+	if port == "" {
+		port = "8080"
+	}
 
 	h.SetupRoutes(r)
-	r.Run(":8080")
+	r.Run("0.0.0.0:" + port)
 }
