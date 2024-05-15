@@ -220,6 +220,7 @@ func (h *Handler) HandleLogin(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Set("user_id", user.ID)
 	session.Set("userRole", user.Role)
+	session.Set("order_by", h.store.GetTaskListOrder(user.ID))
 	session.Save()
 
 	log.Printf("user data: %v", user)
@@ -252,11 +253,11 @@ func AuthRequired() gin.HandlerFunc {
 
 func (h *Handler) ShowDashboard(c *gin.Context) {
 
-	log.Printf("What the hell is going on?")
 	session := sessions.Default(c)
 	userID := session.Get("user_id")
 	userRole := session.Get("userRole")
 	userIDVal, ok := session.Get("user_id").(int)
+	orderBy := session.Get("order_by").(string)
 	if !ok {
 		log.Printf("ok: %v", ok)
 		return
@@ -266,7 +267,7 @@ func (h *Handler) ShowDashboard(c *gin.Context) {
 	// userProfile, err := h.store.GetUserById(1)
 	log.Printf("userRole.id: %v", userRole)
 
-	tasks, err := h.store.GetTasks()
+	tasks, err := h.store.GetTasks(orderBy)
 	if err != nil {
 		// Log the error and handle it appropriately
 		log.Printf("Error retrieving tasks: %v", err)
@@ -313,18 +314,18 @@ func (h *Handler) filterTasklist(c *gin.Context, tasks []model.Task, filter stri
 
 	return filteredTasks, nil
 }
-func (h *Handler) renderTaskList(c *gin.Context, filter string) {
+func (h *Handler) renderTaskList(c *gin.Context, filter string, order string) {
 
-	tasks, err := h.store.GetTasks() // Assuming this fetches all tasks
+	session := sessions.Default(c)
+	userID := session.Get("user_id")
+	orderBy := session.Get("order_by").(string)
+	tasks, err := h.store.GetTasks(orderBy) // Assuming this fetches all tasks
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error getting tasks: " + err.Error()})
 		return
 	}
 
 	var filteredTasks []model.Task
-
-	session := sessions.Default(c)
-	userID := session.Get("user_id")
 
 	log.Printf("%v", userID)
 	// Apply filtering based on the filter parameter
@@ -357,7 +358,7 @@ func (h *Handler) renderTaskList(c *gin.Context, filter string) {
 	if len(filteredTasks) == 0 {
 		c.HTML(http.StatusOK, "taskList.templ", gin.H{"message": "No tasks found."})
 	} else {
-		c.HTML(http.StatusOK, "taskList.templ", gin.H{"tasks": filteredTasks, "filter": filter, "userID": userID})
+		c.HTML(http.StatusOK, "taskList.templ", gin.H{"tasks": filteredTasks, "filter": filter, "userID": userID, "order": order})
 	}
 }
 func (h *Handler) CreateAccount(c *gin.Context) {
@@ -555,15 +556,24 @@ func (h *Handler) CreateTask(c *gin.Context) {
 }
 
 func (h *Handler) ShowTasks(c *gin.Context) {
+	session := sessions.Default(c)
+	userID := session.Get("user_id").(int)
+
 	// Fetch the 'filter' query parameter, default to "all" if not specified
 	filter := c.DefaultQuery("filter", "all")
+	order := c.DefaultQuery("orderBy", "updated_at")
 
 	// Log the received filter parameter for debugging
 	log.Printf("Filter parameter received: %s", filter)
+	log.Printf("Order parameter received: %s", order)
+	session.Set("order_by", order)
+	session.Save()
 
+	h.store.SaveTaskListOrder(userID, order)
 	// Call the renderTaskList function with the determined filter
-	h.renderTaskList(c, filter)
+	h.renderTaskList(c, filter, order)
 }
+
 func (h *Handler) generateBankAccountNumber(c *gin.Context) {
 	// Generate the bank account number using the store
 	accountNumber := h.store.GenerateBankAccountNumber()

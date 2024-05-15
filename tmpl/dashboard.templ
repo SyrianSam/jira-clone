@@ -325,6 +325,7 @@
 </form>
 
 
+
 <form id="filter" hx-get="/task/showAll" hx-target="#taskList" hx-trigger="change">
     <select name="filter">
         <option value="all" {{if eq .filter "all"}}selected{{end}}>All Tasks</option>
@@ -333,7 +334,14 @@
             <option value="archived" {{if eq .filter "archived"}}selected{{end}}>Archived Tasks</option>
         {{end}}
     </select>
+        <p>Order By:</p>
+    <select name="orderBy">
+            <option value="updated_at" {{if eq .order "updated_at"}}selected{{end}}>Creation Date</option>
+            <option value="created_at" {{if eq .order "created_at"}}selected{{end}}>Modification Date</option>
+    </select>
+
 </form>
+
 
 <div id="taskList">
 

@@ -6,6 +6,7 @@ import (
 	"jira-clone/internal/model"
 	"log"
 	"math/rand"
+	"strings"
 
 	"github.com/tealeg/xlsx"
 
@@ -109,9 +110,12 @@ func (s *Store) FindUsers(query string) ([]model.User, error) {
 	return users, nil
 }
 
-func (s *Store) GetTasks() ([]model.Task, error) {
+func (s *Store) GetTasks(orderBy string) ([]model.Task, error) {
 	var tasks []model.Task
-	rows, err := s.db.Query("SELECT id, title, description, assigned_to, state, first_name, last_name, birth_date, email, postal_code, city, regulatory_compliance_check, contract_compliance, task_creator, task_responsible, comments, archived FROM tasks ")
+
+	query := fmt.Sprintf("SELECT id, title, description, assigned_to, state, first_name, last_name, birth_date, email, postal_code, city, regulatory_compliance_check, contract_compliance, task_creator, task_responsible, comments, archived FROM tasks ORDER BY %s DESC", orderBy)
+
+	rows, err := s.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +128,7 @@ func (s *Store) GetTasks() ([]model.Task, error) {
 		}
 		tasks = append(tasks, task)
 	}
+
 	return tasks, nil
 }
 
@@ -170,11 +175,40 @@ func (s *Store) FindTasksByName(name string) ([]*model.Task, error) {
 	return tasks, nil
 }
 
+func (s *Store) SaveTaskListOrder(userID int, taskListOrder string) error {
+	// SQL statement that inserts a new row or updates it if there's a conflict on the user_id column
+	query := `
+    INSERT INTO user_preferences (user_id, field_order, order_by)
+    VALUES ($1,'', $2)
+    ON CONFLICT (user_id) DO UPDATE
+    SET field_order = EXCLUDED.field_order
+    `
+	_, err := s.db.Exec(query, userID, taskListOrder)
+	return err
+}
+
+func (s *Store) GetTaskListOrder(userID int) string {
+	defaultTaskListOrder := "updated_at"
+	var TaskListOrder string
+	query := "SELECT order_by FROM user_preferences WHERE user_id = $1"
+
+	err := s.db.QueryRow(query, userID).Scan(&TaskListOrder)
+	if err != nil {
+		// If there's no record, we could consider returning a default order
+		if err == sql.ErrNoRows {
+			// Return default order if no specific order is stored
+			return defaultTaskListOrder
+		}
+	}
+
+	return TaskListOrder
+}
+
 func (s *Store) SaveFieldOrder(userID int, fieldOrder string) error {
 	// SQL statement that inserts a new row or updates it if there's a conflict on the user_id column
 	query := `
-    INSERT INTO user_preferences (user_id, field_order)
-    VALUES ($1, $2)
+    INSERT INTO user_preferences (user_id, field_order, order_by)
+    VALUES ($1, $2, 'updated_at')
     ON CONFLICT (user_id) DO UPDATE
     SET field_order = EXCLUDED.field_order
     `
@@ -213,7 +247,7 @@ func (s *Store) CreateTask(task model.Task) error {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
         RETURNING id`
 
-	err := s.db.QueryRow(query, task.Title, task.Description, task.AssignedTo, task.State,
+	err := s.db.QueryRow(query, strings.ToUpper(task.Title), task.Description, task.AssignedTo, task.State,
 		task.FirstName, task.LastName, task.BirthDate, task.Email, task.PostalCode,
 		task.City, task.RegulatoryComplianceCheck, task.ContractCompliance,
 		task.TaskCreator, task.TaskResponsible, task.Comments, task.Priority,
@@ -238,7 +272,7 @@ func (s *Store) UpdateTask(task *model.Task) error {
         task_creator=$12, task_responsible=$13, comments=$14, 
         priority=$15, credit_card=$16, updated_at=$17, bank_account_number=$18 WHERE id=$19`
 
-	_, err := s.db.Exec(query, task.Title, task.Description, task.State,
+	_, err := s.db.Exec(query, strings.ToUpper(task.Title), task.Description, task.State,
 		task.FirstName, task.LastName, task.BirthDate, task.Email,
 		task.PostalCode, task.City, task.RegulatoryComplianceCheck,
 		task.ContractCompliance, task.TaskCreator, task.TaskResponsible,
