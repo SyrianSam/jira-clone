@@ -12,6 +12,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Handler struct {
@@ -210,13 +211,24 @@ func (h *Handler) HandleLogin(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
 
-	user, err := h.store.VerifyUser(username, password)
+	// Get user by username
+	user, err := h.store.GetUserByUsername(username)
 	if err != nil {
-		log.Printf("error verifying user: %v", err)
+		log.Printf("error fetching user: %v", err)
 		// Handle different kinds of errors appropriately
 		c.HTML(http.StatusInternalServerError, "login.templ", gin.H{"Error": "Incorrect username or password"})
 		return
 	}
+
+	// Compare the provided password with the stored hashed password
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		log.Printf("error verifying password: %v", err)
+		// Handle different kinds of errors appropriately
+		c.HTML(http.StatusInternalServerError, "login.templ", gin.H{"Error": "Incorrect username or password"})
+		return
+	}
+
 	session := sessions.Default(c)
 	session.Set("user_id", user.ID)
 	session.Set("userRole", user.Role)
@@ -365,9 +377,14 @@ func (h *Handler) CreateAccount(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
 
-	// log.Printf(username, password)
+	hashedPassword, hashErr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if hashErr != nil {
+		// Handle hashing error
+		c.HTML(http.StatusInternalServerError, "login.templ", gin.H{"Error": "Server error"})
+		return
+	}
 
-	err := h.store.CreateUser(username, password)
+	err := h.store.CreateUser(username, string(hashedPassword))
 	if err != nil {
 		// Handle different kinds of errors appropriately
 		c.HTML(http.StatusInternalServerError, "login.templ", gin.H{"Error": "Server error"})
