@@ -627,11 +627,11 @@ func (h *Handler) InsertTask(c *gin.Context) {
 	task.Title = h.store.GenerateTitle()
 	// task.BankAccountNumber = h.store.GenerateBankAccountNumber()
 
-	parts := strings.Split(task.AssignedTo, "-")
-	if len(parts) != 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid format for AssignedTo"})
-		return
-	}
+	// parts := strings.Split(task.AssignedTo, "-")
+	// if len(parts) != 2 {
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid format for AssignedTo"})
+	// 	return
+	// }
 	// task.AssignedTo = strings.TrimSpace(parts[0])
 
 	log.Printf("Task Data: %+v", task)

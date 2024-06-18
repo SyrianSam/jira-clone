@@ -8,6 +8,38 @@
     <title>Dashboard</title>
     <style>
 
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 15px;
+            height: 15px;
+            animation: spin 2s linear infinite;
+            display: none;
+            margin: auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .htmx-request .loader{
+            display: inline-block;
+        }
+
+        .htmx-request #button-text{
+            display:none;
+        }
+
+        /* Styling for when the request is active */
+        button.hx-requesting #button-text {
+            display: none; /* Hide text */
+        }
+
+        button.hx-requesting .loader {
+            display: inline-block; /* Show loader */
+        }
+
         // body {
         //     background-color: #f8f0e3; /* Light fleshy color for the background */
         //     font-family: Arial, sans-serif;
@@ -347,7 +379,6 @@
 
 
     <span id="task-list-indicator"></span>
-
 
     <div>
         {{ range .tasks }}

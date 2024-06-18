@@ -6,7 +6,7 @@
         <div id="title-section">
             <input type="checkbox" id="title-pin" hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "title-section"}' hx-swap="outerHTML" checked>
             <label for="title-pin">Title:</label>
-            <input type="text" name="title" placeholder="KBB-45" required value="{{ $.Task.Title }}">
+            <input type="text" name="title" placeholder="KBB-45"  value="{{ $.Task.Title }}">
         </div>
         {{end}}
         {{if eq . "state-section"}}
@@ -17,6 +17,7 @@
                 <option value="A Faire" {{if eq $.Task.State "A Faire"}}selected{{end}}>À Faire</option>
                 <option value="En Cours" {{if eq $.Task.State "En Cours"}}selected{{end}}>En Cours</option>
                 <option value="Terminé" {{if eq $.Task.State "Terminé"}}selected{{end}}>Terminé</option>
+                <option value="Bloqué" {{if eq $.Task.State "Bloqué"}}selected{{end}}>Bloqué</option>
             </select>
         </div>
         {{end}}
@@ -54,14 +55,14 @@
         <div id="first-name-section">
             <input type="checkbox" id="first-name-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "first-name-section"}' hx-swap="outerHTML" checked>
             <label for="first-name-pin">Prénom:</label>
-            <input type="text" name="first_name" value="{{ $.Task.FirstName }}" required>
+            <input type="text" name="first_name" value="{{ $.Task.FirstName }}" >
         </div>
         {{end}}
         {{if eq . "last-name-section"}}
         <div id="last-name-section">
             <input type="checkbox" id="last-name-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "last-name-section"}' hx-swap="outerHTML" checked>
             <label for="last-name-pin">Nom:</label>
-            <input type="text" name="last_name" value="{{ $.Task.LastName }}" required>
+            <input type="text" name="last_name" value="{{ $.Task.LastName }}" >
         </div>
         {{end}}
         {{if eq . "regulatory-check-section"}}
@@ -72,8 +73,12 @@
                 hx-post="/verify-names"
                 hx-include="[name='first_name'], [name='last_name']"
                 hx-target="#verification-results"
-                hx-trigger="click">
-            Vérifier
+                hx-trigger="click"
+                hx-indicator="#loader">
+            <div id="loader">
+             <span id="button-text">Vérifier</span>
+             <span class="loader"></span>
+            </div>
             </button>
             <div id="verification-results" name="verification-results">
                 <input type="text" name="regulatory_compliance_check" value="{{ $.Task.RegulatoryComplianceCheck }}" readonly>
@@ -82,10 +87,17 @@
         {{end}}
         {{if eq . "bank-account-section"}}
         <div id="bank-account-section">
-            <input type="checkbox" id="bank-account-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "bank-account-section"}' hx-swap="outerHTML" checked>
+            <input type="checkbox" id="bank-account-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "bank-account-section"}' hx-swap="outerHTML"  >
             <label for="bank-account-pin">Bank Account Number:</label>  
-            <button id="generate-account-number" {{ if not (or (eq $.UserRole "1") (eq $.UserRole "2")) }} disabled{{ end }} hx-post="/bankaccount/generate" hx-trigger="click" hx-target="#banContainer">
-                Generate Account Number
+            <button id="generate-account-number" {{ if not (or (eq $.UserRole "1") (eq $.UserRole "2")) }} disabled{{ end }} 
+            hx-post="/bankaccount/generate" 
+            hx-trigger="click" 
+            hx-target="#banContainer"
+            hx-indicator="#GBNloader">
+            <div id="GBNloader">
+             <span id="button-text">Generate Account Number</span>
+             <span class="loader"></span>
+            </div> 
             </button>
             <div id="banContainer">
                 <input type="text" name="bank_account_number" id="bank_account_number_input" value="{{ $.Task.BankAccountNumber }}" {{ if not (or (eq $.UserRole "1") (eq $.UserRole "2")) }} readonly{{ end }}>
@@ -106,21 +118,21 @@
         <div id="city-section"> 
             <input type="checkbox" id="city-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "city-section"}' hx-swap="outerHTML" checked>
             <label for="city-pin">Ville:</label>
-            <input type="text" name="city" value="{{ $.Task.City }}" required>
+            <input type="text" name="city" value="{{ $.Task.City }}" >
         </div>
         {{end}}
         {{if eq . "email-section"}}
         <div id="email-section">
             <input type="checkbox" id="email-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "email-section"}' hx-swap="outerHTML" checked>
             <label for="email-pin">Email:</label>
-            <input type="email" name="email" value="{{ $.Task.Email }}" required>
+            <input type="email" name="email" value="{{ $.Task.Email }}" >
         </div>
         {{end}}
         {{if eq . "postal-code-section"}}
         <div id="postal-code-section">
             <input type="checkbox" id="postal-code-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "postal-code-section"}' hx-swap="outerHTML" checked>
             <label for="postal-code-pin">Code Postal:</label>
-            <input type="text" name="postal_code" value="{{ $.Task.PostalCode }}" required pattern="\d{5}">
+            <input type="text" name="postal_code" value="{{ $.Task.PostalCode }}"  >
         </div>
         {{end}}
         {{if eq . "priority-section"}}
@@ -138,7 +150,7 @@
         <div id="birth-date-section">
             <input type="checkbox" id="birth-date-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "birth-date-section"}' hx-swap="outerHTML" checked>
             <label for="birth-date-pin">Birth Date:</label>
-            <input type="date" name="birth_date" required value="{{ $.Task.BirthDate }}">
+            <input type="date" name="birth_date"  value="{{ $.Task.BirthDate }}">
         </div>
         {{end}}
         {{if eq . "created-at-section"}}
@@ -165,7 +177,7 @@
         <div id="title-section">
             <input type="checkbox" id="title-pin" hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "title-section"}' hx-swap="outerHTML"  >
             <label for="title-pin">Title:</label>
-            <input type="text" name="title" placeholder="KBB-45" required value="{{ $.Task.Title }}">
+            <input type="text" name="title" placeholder="KBB-45"  value="{{ $.Task.Title }}">
         </div>
         {{end}}
         {{if eq . "state-section"}}
@@ -213,26 +225,30 @@
         <div id="first-name-section">
             <input type="checkbox" id="first-name-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "first-name-section"}' hx-swap="outerHTML"  >
             <label for="first-name-pin">Prénom:</label>
-            <input type="text" name="first_name" value="{{ $.Task.FirstName }}" required>
+            <input type="text" name="first_name" value="{{ $.Task.FirstName }}" >
         </div>
         {{end}}
         {{if eq . "last-name-section"}}
         <div id="last-name-section">
             <input type="checkbox" id="last-name-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "last-name-section"}' hx-swap="outerHTML"  >
             <label for="last-name-pin">Nom:</label>
-            <input type="text" name="last_name" value="{{ $.Task.LastName }}" required>
+            <input type="text" name="last_name" value="{{ $.Task.LastName }}" >
         </div>
         {{end}}
         {{if eq . "regulatory-check-section"}}
         <div id="regulatory-check-section">
-            <input type="checkbox" id="regulatory-check-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "regulatory-check-section"}' hx-swap="outerHTML"  >
+            <input type="checkbox" id="regulatory-check-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "regulatory-check-section"}' hx-swap="outerHTML" checked>
             <label for="regulatory-check-pin">Demande vérification régulation bancaire:</label>
             <button type="button"
                 hx-post="/verify-names"
                 hx-include="[name='first_name'], [name='last_name']"
                 hx-target="#verification-results"
-                hx-trigger="click">
-            Vérifier
+                hx-trigger="click"
+                hx-indicator="#loader">
+            <div id="loader">
+             <span id="button-text">Vérifier</span>
+             <span class="loader"></span>
+            </div>
             </button>
             <div id="verification-results" name="verification-results">
                 <input type="text" name="regulatory_compliance_check" value="{{ $.Task.RegulatoryComplianceCheck }}" readonly>
@@ -243,8 +259,15 @@
         <div id="bank-account-section">
             <input type="checkbox" id="bank-account-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "bank-account-section"}' hx-swap="outerHTML"  >
             <label for="bank-account-pin">Bank Account Number:</label>  
-            <button id="generate-account-number" {{ if not (or (eq $.UserRole "1") (eq $.UserRole "2")) }} disabled{{ end }} hx-post="/bankaccount/generate" hx-trigger="click" hx-target="#banContainer">
-                Generate Account Number
+            <button id="generate-account-number" {{ if not (or (eq $.UserRole "1") (eq $.UserRole "2")) }} disabled{{ end }} 
+            hx-post="/bankaccount/generate" 
+            hx-trigger="click" 
+            hx-target="#banContainer"
+            hx-indicator="#GBNloader">
+            <div id="GBNloader">
+             <span id="button-text">Generate Account Number</span>
+             <span class="loader"></span>
+            </div> 
             </button>
             <div id="banContainer">
                 <input type="text" name="bank_account_number" id="bank_account_number_input" value="{{ $.Task.BankAccountNumber }}" {{ if not (or (eq $.UserRole "1") (eq $.UserRole "2")) }} readonly{{ end }}>
@@ -265,21 +288,21 @@
         <div id="city-section">
             <input type="checkbox" id="city-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "city-section"}' hx-swap="outerHTML"  >
             <label for="city-pin">Ville:</label>
-            <input type="text" name="city" value="{{ $.Task.City }}" required>
+            <input type="text" name="city" value="{{ $.Task.City }}" >
         </div>
         {{end}}
         {{if eq . "email-section"}}
         <div id="email-section">
             <input type="checkbox" id="email-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "email-section"}' hx-swap="outerHTML"  >
             <label for="email-pin">Email:</label>
-            <input type="email" name="email" value="{{ $.Task.Email }}" required>
+            <input type="email" name="email" value="{{ $.Task.Email }}" >
         </div>
         {{end}}
         {{if eq . "postal-code-section"}}
         <div id="postal-code-section">
             <input type="checkbox" id="postal-code-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "postal-code-section"}' hx-swap="outerHTML"  >
             <label for="postal-code-pin">Code Postal:</label>
-            <input type="text" name="postal_code" value="{{ $.Task.PostalCode }}" required pattern="\d{5}">
+            <input type="text" name="postal_code" value="{{ $.Task.PostalCode }}"  >
         </div>
         {{end}}
         {{if eq . "priority-section"}}
@@ -297,7 +320,7 @@
         <div id="birth-date-section">
             <input type="checkbox" id="birth-date-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "birth-date-section"}' hx-swap="outerHTML" >
             <label for="birth-date-pin">Birth Date:</label>
-            <input type="date" name="birth_date" required value="{{ $.Task.BirthDate }}">
+            <input type="date" name="birth_date"  value="{{ $.Task.BirthDate }}">
         </div>
         {{end}}
         {{if eq . "created-at-section"}}

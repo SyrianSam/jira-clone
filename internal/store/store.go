@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/tealeg/xlsx"
 
@@ -287,6 +288,7 @@ func (s *Store) UpdateTask(task *model.Task) error {
 }
 
 func (s *Store) VerifyRegularity(firstName, lastName string) (bool, error) {
+	time.Sleep(3 * time.Second)
 	// Load the XLSX file
 	wb, err := xlsx.OpenFile("NOK.xlsx")
 	if err != nil {
@@ -338,6 +340,7 @@ func (s *Store) GenerateTitle() string {
 // GenerateBankAccountNumber generates a bank account number with a random
 // country code prefix, which is one of "A", "B", "C", or "D".
 func (s *Store) GenerateBankAccountNumber() string {
+	time.Sleep(3 * time.Second)
 	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	const n = 10
 	countryCode := []byte{'A', 'B', 'C', 'D'}[rand.Intn(4)]

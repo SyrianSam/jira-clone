@@ -9,6 +9,7 @@
                 <option value="A Faire">À Faire</option>
                 <option value="En Cours">En Cours</option>
                 <option value="Terminé">Terminé</option>
+                <option value="Bloqué">Bloqué</option>
             </select>
         </p>
 
@@ -16,6 +17,7 @@
             <input type="checkbox" id="credit-card-pin">
             <label for="credit-card-pin">Carte de Crédit:</label>
             <select name="credit_card">
+                <option value=""></option>
                 <option value="oui">Oui</option>
                 <option value="non">Non</option>
             </select>
@@ -25,6 +27,7 @@
             <input type="checkbox" id="rib-pin">
             <label for="rib-pin">RIB:</label>
             <select name="rib">
+                <option value=""></option>
                 <option value="oui">Oui</option>
                 <option value="non">Non</option>
             </select>
@@ -33,7 +36,8 @@
         <p>
             <input type="checkbox" id="contract-compliance-pin">
             <label for="contract-compliance-pin">Conformité Contractuelle:</label>
-            <select name="contract_compliance">
+            <select name="contract_compliance">            
+                <option value=""></option>
                 <option value="conforme">Conforme</option>
                 <option value="non conforme">Non Conforme</option>
             </select>
@@ -42,12 +46,12 @@
         <p>
             <input type="checkbox" id="first-name-pin">
             <label for="first-name-pin">Prénom:</label>
-            <input type="text" name="first_name" required>
+            <input type="text" name="first_name" >
         </p>
         <p>
             <input type="checkbox" id="last-name-pin">
             <label for="last-name-pin">Nom:</label>
-            <input type="text" name="last_name"  value="{{ .Task.LastName }}" required>
+            <input type="text" name="last_name"  value="{{ .Task.LastName }}" >
         </p>
         <p>
             <input type="checkbox" id="regulatory-check-pin">
@@ -56,19 +60,22 @@
                 hx-post="/verify-names"
                 hx-include="[name='first_name'], [name='last_name']"
                 hx-target="#verification-results"
-                hx-trigger="click">
-            Vérifier
+                hx-trigger="click"
+                hx-indicator="#loader">
+            <div id="loader">
+             <span id="button-text">Vérifier</span>
+             <span class="loader"></span>
+            </div>
             </button>
             <div id="verification-results" name="verification-results">
             <input type="text" name="regulatory_compliance_check"  value="{{ .Task.RegulatoryComplianceCheck }}" readonly>
             </div>
-
         </p>
 
         <p>
             <input type="checkbox" id="bank-account-pin">
             <label for="bank-account-pin">Bank Account Number:</label>
-            <input type="text" name="bank_account_number" value="automatically generated" readonly>
+            <input type="text" name="bank_account_number" value="" readonly>
         </p>
 
         <p>
@@ -82,7 +89,7 @@
         <p>
             <input type="checkbox" id="city-pin">
             <label for="city-pin">Ville:</label>
-            <input type="text" name="city" required>
+            <input type="text" name="city" >
         </p>
 
 
@@ -90,13 +97,13 @@
         <p>
             <input type="checkbox" id="email-pin">
             <label for="email-pin">Email:</label>
-            <input type="email" name="email" required>
+            <input type="email" name="email" >
         </p>
 
         <p>
             <input type="checkbox" id="postal-code-pin">
             <label for="postal-code-pin">Code Postal:</label>
-            <input type="text" name="postal_code" required pattern="\d{5}">
+            <input type="text" name="postal_code" >
         </p>
 
         <p>
@@ -112,7 +119,7 @@
         <p>
             <input type="checkbox" id="birth-date-pin">
             <label for="birth-date-pin">Birth Date:</label>
-            <input type="date" name="birth_date" required>
+            <input type="date" name="birth_date" >
         </p>
 
     </fieldset>
