@@ -66,4 +66,6 @@ type Task struct {
 	CreatedAt                 string `form:"create_date"` // No form tag needed as this will be set on the server-side
 	UpdatedAt                 string `form:"update_date"`
 	Archived                  string
+	ParentTask                string
+	Subtasks                  string
 }

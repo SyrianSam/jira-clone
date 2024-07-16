@@ -1,9 +1,17 @@
+
 <div id="taskList">
     <span id="task-list-indicator"></span>
     <div>
         {{ range .tasks }}
-        <div class="task-card" hx-get="/task/details/{{ .ID }}" hx-target="#taskDetails" hx-trigger="click">
-            <h3>{{ .Title }}</h3>
+        <div class="task-card" 
+             hx-get="/task/details/{{ .ID }}" 
+             hx-target="#taskDetails" 
+             hx-trigger="click" 
+            >
+            <div class="task-header">
+                <span class="state-indicator" style="background-color: {{ if eq .State "Bloqué" }}red{{ else if eq .State "En Cours" }}green{{ else if eq .State "A Faire" }}orange{{ end }};"></span>
+                <h3>{{ .Title }}</h3>
+            </div>
             <div class="task-details">
                 <span class="task-id"><strong>SER - </strong> {{ .ID }}</span>
                 <span class="task-state"><strong>State:</strong> {{ .State }}</span> 

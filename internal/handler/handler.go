@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"jira-clone/internal/model"
 	"jira-clone/internal/store"
 	"log"
@@ -50,6 +51,8 @@ func (h *Handler) SetupRoutes(router *gin.Engine) {
 	router.DELETE("/task/delete/:id", AuthRequired(), h.DeleteTask)
 	router.POST("/task/archive/:id", AuthRequired(), h.ArchiveTask)
 	router.POST("/task/new", AuthRequired(), h.CreateNewTask)
+	router.POST("/subtask/new", AuthRequired(), h.CreateNewTask)
+
 	router.GET("/task/showAll", AuthRequired(), h.ShowTasks)
 	router.POST("/modify-task", AuthRequired(), h.ModifyTask)
 	router.POST("/create-task", AuthRequired(), h.InsertTask)
@@ -400,8 +403,37 @@ func (h *Handler) CreateAccountRoute(c *gin.Context) {
 }
 
 func (h *Handler) CreateNewTask(c *gin.Context) {
+	taskID := c.PostForm("taskID")
 
-	c.HTML(http.StatusOK, "taskform_new.templ", nil)
+	if taskID == "" {
+		log.Printf("Task ID not provided")
+		// c.HTML(http.StatusBadRequest, "error.templ", gin.H{"Error": "No task ID provided"})
+		// return
+
+		c.HTML(http.StatusOK, "taskform_new.templ", nil)
+	}
+	log.Printf("Task ID: %v", taskID)
+	taskIDint, err := strconv.Atoi(taskID)
+	if err != nil {
+		log.Printf("Task ID not provided")
+		c.HTML(http.StatusBadRequest, "error.templ", gin.H{"Error": "No task ID provided"})
+		return
+	}
+	tasks, err := h.store.FindTasksByID(taskIDint)
+
+	for _, task := range tasks {
+		fmt.Printf("Task: %+v\n", *task)
+
+		// fmt.Printf("Task: %+v\n", *task)
+		// log.Printf("Task: %+v\n", *task)
+		log.Printf("err %v", err)
+
+		c.HTML(http.StatusOK, "taskform_new.templ", gin.H{
+			"Task":   tasks[0],
+			"TaskID": taskID,
+		})
+
+	}
 }
 
 func (h *Handler) ArchiveTask(c *gin.Context) {

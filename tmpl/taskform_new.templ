@@ -2,14 +2,18 @@
     <fieldset>
         <legend>Task Details</legend>
 
+        <div id="title-section">
+            <label for="title-pin">Title:</label>
+            <input type="text" name="title" placeholder="KBB-45"  value="{{if .Task.Title}}{{.Task.Title}}-SubTask{{else}}{{.Task.Title}}{{end}}">
+        </div>
         <p>
             <input type="checkbox" id="state-pin">
             <label for="state-pin">État:</label>
             <select name="state">
-                <option value="A Faire">À Faire</option>
-                <option value="En Cours">En Cours</option>
-                <option value="Terminé">Terminé</option>
-                <option value="Bloqué">Bloqué</option>
+                <option value="A Faire" {{if eq $.Task.State "A Faire"}}selected{{end}}>À Faire</option>
+                <option value="En Cours" {{if eq $.Task.State "En Cours"}}selected{{end}}>En Cours</option>
+                <option value="Terminé" {{if eq $.Task.State "Terminé"}}selected{{end}}>Terminé</option>
+                <option value="Bloqué" {{if eq $.Task.State "Bloqué"}}selected{{end}}>Bloqué</option>
             </select>
         </p>
 
@@ -18,8 +22,8 @@
             <label for="credit-card-pin">Carte de Crédit:</label>
             <select name="credit_card">
                 <option value=""></option>
-                <option value="oui">Oui</option>
-                <option value="non">Non</option>
+                <option value="oui" {{if eq $.Task.CreditCard "oui"}}selected{{end}}>Oui</option>
+                <option value="non" {{if eq $.Task.CreditCard "non"}}selected{{end}}>Non</option>
             </select>
         </p>
 
@@ -28,8 +32,8 @@
             <label for="rib-pin">RIB:</label>
             <select name="rib">
                 <option value=""></option>
-                <option value="oui">Oui</option>
-                <option value="non">Non</option>
+                <option value="oui" {{if eq $.Task.Rib "oui"}}selected{{end}}>Oui</option>
+                <option value="non" {{if eq $.Task.Rib "non"}}selected{{end}}>Non</option>
             </select>
         </p>
 
@@ -38,15 +42,15 @@
             <label for="contract-compliance-pin">Conformité Contractuelle:</label>
             <select name="contract_compliance">            
                 <option value=""></option>
-                <option value="conforme">Conforme</option>
-                <option value="non conforme">Non Conforme</option>
+                <option value="conforme" {{if eq $.Task.ContractCompliance "conforme"}}selected{{end}}>Conforme</option>
+                <option value="non conforme" {{if eq $.Task.ContractCompliance "non conforme"}}selected{{end}}>Non Conforme</option>
             </select>
         </p>
 
         <p>
             <input type="checkbox" id="first-name-pin">
             <label for="first-name-pin">Prénom:</label>
-            <input type="text" name="first_name" >
+            <input type="text" name="first_name" value="{{ .Task.FirstName }}">
         </p>
         <p>
             <input type="checkbox" id="last-name-pin">
@@ -75,12 +79,12 @@
         <p>
             <input type="checkbox" id="bank-account-pin">
             <label for="bank-account-pin">Bank Account Number:</label>
-            <input type="text" name="bank_account_number" value="" readonly>
+            <input type="text" name="bank_account_number" value="{{ $.Task.BankAccountNumber }}" readonly>
         </p>
 
         <p>
             <label for="assigned-to-pin">Assigned to:</label>
-            <input type="text" name="assigned_to" list="users" hx-get="/users?q={value}" hx-trigger="keyup changed delay:500" hx-target="#users" autocomplete="off"/>
+            <input type="text" name="assigned_to" value="{{$.Task.AssignedTo}}" list="users" hx-get="/users?q={value}" hx-trigger="keyup changed delay:500" hx-target="#users" autocomplete="off"/>
             <datalist id="users">
                 <!-- users will be populated by htmx -->
             </datalist>
@@ -89,7 +93,7 @@
         <p>
             <input type="checkbox" id="city-pin">
             <label for="city-pin">Ville:</label>
-            <input type="text" name="city" >
+            <input type="text" name="city"  value="{{ $.Task.City }}">
         </p>
 
 
@@ -97,29 +101,29 @@
         <p>
             <input type="checkbox" id="email-pin">
             <label for="email-pin">Email:</label>
-            <input type="email" name="email" >
+            <input type="email" name="email" value="{{ $.Task.Email }}">
         </p>
 
         <p>
             <input type="checkbox" id="postal-code-pin">
             <label for="postal-code-pin">Code Postal:</label>
-            <input type="text" name="postal_code" >
+            <input type="text" name="postal_code" value="{{ $.Task.PostalCode }}" >
         </p>
 
         <p>
             <input type="checkbox" id="priority-pin">
             <label for="priority-pin">Priorité:</label>
             <select name="priority">
-                <option value="low">Low</option>
-                <option value="regular">Regular</option>
-                <option value="urgent">Urgent</option>
+                <option value="low" {{if eq $.Task.Priority "low"}}selected{{end}}>Low</option>
+                <option value="regular" {{if eq $.Task.Priority "regular"}}selected{{end}}>Regular</option>
+                <option value="urgent" {{if eq $.Task.Priority "urgent"}}selected{{end}}>Urgent</option>
             </select>
         </p>
 
         <p>
             <input type="checkbox" id="birth-date-pin">
             <label for="birth-date-pin">Birth Date:</label>
-            <input type="date" name="birth_date" >
+            <input type="date" name="birth_date" value="{{ $.Task.BirthDate }}">
         </p>
 
     </fieldset>

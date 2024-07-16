@@ -1,6 +1,51 @@
+
 <form id="taskForm" hx-post="/task/details/{{ .Task.ID }}" hx-target="#taskList">
+        <div id="subTask">
+         <button class="new-task-button" 
+         hx-post="/subtask/new" 
+         hx-target="#taskDetails" 
+         hx-trigger="click"
+         hx-indicator="#loader"
+         hx-vals='{"taskID": {{ .Task.ID }} }'
+         ><div id="loader">
+             <span id="button-text">Create Subtask</span>
+             <span class="loader"></span>
+            </div>
+            </button>
+        </div>
     <fieldset>
+    
         <legend>Task Details</legend>
+        <!-- New section for parent task and subtasks -->
+        <div id="task-relations" style="position: absolute; top: 0; right: 0; width: 300px;">
+            {{ if .Task.ParentTask }}
+            <div id="parent-task-section">
+                <h4>Parent Task</h4>
+                <p>
+                    <strong>Title:</strong> {{ .Task.ParentTask.Title }}<br>
+                    <strong>ID:</strong> {{ .Task.ParentTask.ID }}<br>
+                    <a href="/task/details/{{ .Task.ParentTask.ID }}" hx-get="/task/details/{{ .Task.ParentTask.ID }}" hx-target="#taskDetails">View Parent Task</a>
+                </p>
+            </div>
+            {{ end }}
+
+            {{ if .Task.Subtasks }}
+            <div id="subtasks-section">
+                <h4>Subtasks</h4>
+                <ul>
+                    {{ range .Task.Subtasks }}
+                    <li>
+                        <strong>Title:</strong> {{ .Title }}<br>
+                        <strong>ID:</strong> {{ .ID }}<br>
+                        <a href="/task/details/{{ .ID }}" hx-get="/task/details/{{ .ID }}" hx-target="#taskDetails">View Subtask</a>
+                    </li>
+                    {{ end }}
+                </ul>
+            </div>
+            {{ end }}
+        </div>
+
+        <!-- Existing task details form fields -->
         {{range .PinnedFields}}
         {{if eq . "title-section"}}
         <div id="title-section">
@@ -188,6 +233,7 @@
                 <option value="A Faire" {{if eq $.Task.State "A Faire"}}selected{{end}}>À Faire</option>
                 <option value="En Cours" {{if eq $.Task.State "En Cours"}}selected{{end}}>En Cours</option>
                 <option value="Terminé" {{if eq $.Task.State "Terminé"}}selected{{end}}>Terminé</option>
+                <option value="Bloqué" {{if eq $.Task.State "Bloqué"}}selected{{end}}>Bloqué</option>
             </select>
         </div>
         {{end}}
@@ -237,7 +283,7 @@
         {{end}}
         {{if eq . "regulatory-check-section"}}
         <div id="regulatory-check-section">
-            <input type="checkbox" id="regulatory-check-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "regulatory-check-section"}' hx-swap="outerHTML" checked>
+            <input type="checkbox" id="regulatory-check-pin"  hx-post="/save-field-order" hx-target="#taskForm" hx-trigger="change" hx-vals='{"divId": "regulatory-check-section"}' hx-swap="outerHTML" >
             <label for="regulatory-check-pin">Demande vérification régulation bancaire:</label>
             <button type="button"
                 hx-post="/verify-names"

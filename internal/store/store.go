@@ -136,14 +136,43 @@ func (s *Store) GetTasks(orderBy string) ([]model.Task, error) {
 func (s *Store) GetTaskByID(id int) (*model.Task, error) {
 	var task model.Task
 	err := s.db.QueryRow(`
-		SELECT id, title, description, assigned_to, state, first_name, last_name, birth_date, email, postal_code, city, regulatory_compliance_check, contract_compliance, task_creator, task_responsible, comments, priority, credit_card, created_at, COALESCE(updated_at, ''), bank_account_number
-		FROM tasks WHERE id = $1`, id).Scan(&task.ID, &task.Title, &task.Description, &task.AssignedTo, &task.State, &task.FirstName, &task.LastName, &task.BirthDate, &task.Email, &task.PostalCode, &task.City, &task.RegulatoryComplianceCheck, &task.ContractCompliance, &task.TaskCreator, &task.TaskResponsible, &task.Comments, &task.Priority, &task.CreditCard, &task.CreatedAt, &task.UpdatedAt, &task.BankAccountNumber)
+		SELECT id, title, description, assigned_to, state, first_name, last_name, birth_date, email, postal_code, city, regulatory_compliance_check, contract_compliance, task_creator, task_responsible, comments, priority, credit_card,rib, created_at, COALESCE(updated_at, ''), bank_account_number
+		FROM tasks WHERE id = $1`, id).Scan(&task.ID, &task.Title, &task.Description, &task.AssignedTo, &task.State, &task.FirstName, &task.LastName, &task.BirthDate, &task.Email, &task.PostalCode, &task.City, &task.RegulatoryComplianceCheck, &task.ContractCompliance, &task.TaskCreator, &task.TaskResponsible, &task.Comments, &task.Priority, &task.CreditCard, &task.Rib, &task.CreatedAt, &task.UpdatedAt, &task.BankAccountNumber)
 	if err != nil {
 		return nil, err
 	}
 	return &task, nil
 }
 
+func (s *Store) FindTasksByID(id int) ([]*model.Task, error) {
+
+	// Prepare a slice to hold the tasks
+	var tasks []*model.Task
+	rows, err := s.db.Query(`
+        SELECT id, title, description, assigned_to, state, first_name, last_name, birth_date, email, postal_code, city, regulatory_compliance_check, contract_compliance, task_creator, task_responsible, comments, priority, credit_card,rib, created_at, COALESCE(updated_at, ''), bank_account_number
+        FROM tasks WHERE id = $1 AND archived != '1'`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Iterate through all returned rows
+	for rows.Next() {
+		var task model.Task
+		err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.AssignedTo, &task.State, &task.FirstName, &task.LastName, &task.BirthDate, &task.Email, &task.PostalCode, &task.City, &task.RegulatoryComplianceCheck, &task.ContractCompliance, &task.TaskCreator, &task.TaskResponsible, &task.Comments, &task.Priority, &task.CreditCard, &task.Rib, &task.CreatedAt, &task.UpdatedAt, &task.BankAccountNumber)
+		if err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, &task)
+	}
+
+	// Check for errors from iterating over rows
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
 func (s *Store) FindTasksByName(name string) ([]*model.Task, error) {
 
 	// Prepare a slice to hold the tasks
@@ -244,15 +273,15 @@ func (s *Store) CreateTask(task model.Task) error {
             title, description, assigned_to, state, first_name, last_name, 
             birth_date, email, postal_code, city, regulatory_compliance_check, 
             contract_compliance, task_creator, task_responsible, comments, 
-            priority, credit_card, created_at, bank_account_number, archived
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+            priority, credit_card, created_at, bank_account_number, archived, rib
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
         RETURNING id`
 
 	err := s.db.QueryRow(query, strings.ToUpper(task.Title), task.Description, task.AssignedTo, task.State,
 		task.FirstName, task.LastName, task.BirthDate, task.Email, task.PostalCode,
 		task.City, task.RegulatoryComplianceCheck, task.ContractCompliance,
 		task.TaskCreator, task.TaskResponsible, task.Comments, task.Priority,
-		task.CreditCard, task.CreatedAt, task.BankAccountNumber, 0).Scan(&task.ID)
+		task.CreditCard, task.CreatedAt, task.BankAccountNumber, 0, task.Rib).Scan(&task.ID)
 
 	if err != nil {
 		return err
@@ -271,13 +300,13 @@ func (s *Store) UpdateTask(task *model.Task) error {
         birth_date=$6, email=$7, postal_code=$8, city=$9, 
         regulatory_compliance_check=$10, contract_compliance=$11, 
         task_creator=$12, task_responsible=$13, comments=$14, 
-        priority=$15, credit_card=$16, updated_at=$17, bank_account_number=$18 WHERE id=$19`
+        priority=$15, credit_card=$16, updated_at=$17, bank_account_number=$18,rib=$20 WHERE id=$19`
 
 	_, err := s.db.Exec(query, strings.ToUpper(task.Title), task.Description, task.State,
 		task.FirstName, task.LastName, task.BirthDate, task.Email,
 		task.PostalCode, task.City, task.RegulatoryComplianceCheck,
 		task.ContractCompliance, task.TaskCreator, task.TaskResponsible,
-		task.Comments, task.Priority, task.CreditCard, task.UpdatedAt, task.BankAccountNumber, task.ID)
+		task.Comments, task.Priority, task.CreditCard, task.UpdatedAt, task.BankAccountNumber, task.Rib, task.ID)
 
 	if err != nil {
 		log.Printf("the error in update Task: %v", err.Error())
