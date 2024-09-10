@@ -290,17 +290,43 @@ func (s *Store) CreateTask(task model.Task) error {
 	return nil
 }
 
+func (s *Store) CreateSubTask(subtask model.Subtask) error {
+	log.Printf("task.BankAccountNumber")
+	log.Printf(subtask.BankAccountNumber)
+	query := `
+        INSERT INTO subtasks (
+            parenttaskid, title, description, assigned_to, state, first_name, last_name, 
+            birth_date, email, postal_code, city, regulatory_compliance_check, 
+            contract_compliance, task_creator, task_responsible, comments, 
+            priority, credit_card, created_at, bank_account_number, archived, rib
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21,$22)
+        RETURNING id`
+
+	err := s.db.QueryRow(query, subtask.ParentTaskID, strings.ToUpper(subtask.Title), subtask.Description, subtask.AssignedTo, subtask.State,
+		subtask.FirstName, subtask.LastName, subtask.BirthDate, subtask.Email, subtask.PostalCode,
+		subtask.City, subtask.RegulatoryComplianceCheck, subtask.ContractCompliance,
+		subtask.TaskCreator, subtask.TaskResponsible, subtask.Comments, subtask.Priority,
+		subtask.CreditCard, subtask.CreatedAt, subtask.BankAccountNumber, 0, subtask.Rib).Scan(&subtask.ID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Store) UpdateTask(task *model.Task) error {
 	log.Printf("update_at: %s", task.UpdatedAt)
 	log.Printf("Title: %s", task.Title)
 	log.Printf("ID: %d", task.ID)
 	log.Printf("lastName: %s", task.LastName)
 	query := `UPDATE tasks SET
-        title=$1, description=$2, state=$3, first_name=$4, last_name=$5,
-        birth_date=$6, email=$7, postal_code=$8, city=$9, 
-        regulatory_compliance_check=$10, contract_compliance=$11, 
-        task_creator=$12, task_responsible=$13, comments=$14, 
-        priority=$15, credit_card=$16, updated_at=$17, bank_account_number=$18,rib=$20 WHERE id=$19`
+	title=$1, description=$2, state=$3, first_name=$4, last_name=$5,
+	birth_date=$6, email=$7, postal_code=$8, city=$9, 
+	regulatory_compliance_check=$10, contract_compliance=$11, 
+	task_creator=$12, task_responsible=$13, comments=$14, 
+	priority=$15, credit_card=$16, updated_at=$17, bank_account_number=$18,
+	rib=$19 WHERE id=$20`
 
 	_, err := s.db.Exec(query, strings.ToUpper(task.Title), task.Description, task.State,
 		task.FirstName, task.LastName, task.BirthDate, task.Email,
@@ -316,6 +342,32 @@ func (s *Store) UpdateTask(task *model.Task) error {
 	return nil
 }
 
+func (s *Store) UpdateSubTask(task *model.Task) error {
+	log.Printf("update_at: %s", task.UpdatedAt)
+	log.Printf("Title: %s", task.Title)
+	log.Printf("ID: %d", task.ID)
+	log.Printf("lastName: %s", task.LastName)
+	query := `UPDATE subtasks SET
+	title=$1, description=$2, state=$3, first_name=$4, last_name=$5,
+	birth_date=$6, email=$7, postal_code=$8, city=$9, 
+	regulatory_compliance_check=$10, contract_compliance=$11, 
+	task_creator=$12, task_responsible=$13, comments=$14, 
+	priority=$15, credit_card=$16, updated_at=$17, bank_account_number=$18,
+	rib=$19 WHERE id=$20`
+
+	_, err := s.db.Exec(query, strings.ToUpper(task.Title), task.Description, task.State,
+		task.FirstName, task.LastName, task.BirthDate, task.Email,
+		task.PostalCode, task.City, task.RegulatoryComplianceCheck,
+		task.ContractCompliance, task.TaskCreator, task.TaskResponsible,
+		task.Comments, task.Priority, task.CreditCard, task.UpdatedAt, task.BankAccountNumber, task.Rib, task.ID)
+
+	if err != nil {
+		log.Printf("the error in update subtask: %v", err.Error())
+		return err
+	}
+
+	return nil
+}
 func (s *Store) VerifyRegularity(firstName, lastName string) (bool, error) {
 	time.Sleep(3 * time.Second)
 	// Load the XLSX file

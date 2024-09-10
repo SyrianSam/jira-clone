@@ -15,7 +15,7 @@ func main() {
 
 	r.LoadHTMLGlob("tmpl/*")
 	r.Static("/static", "./static")
-	localLaunch := 1
+	localLaunch := 0
 	connectionString := "host=localhost port=5432 user=postgres password=soleares dbname=gira sslmode=disable"
 	// Setup database connection (example using PostgreSQL)
 	if localLaunch == 0 {

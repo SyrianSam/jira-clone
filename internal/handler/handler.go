@@ -48,10 +48,12 @@ func (h *Handler) SetupRoutes(router *gin.Engine) {
 	router.GET("/task/details/:id", AuthRequired(), h.ShowTaskFormDynamic)
 	// router.GET("/task/details/:id", AuthRequired(), h.ShowTaskForm)
 	router.POST("/task/details/:id", AuthRequired(), h.UpdateTask)
+	router.POST("/subtask/details/:id", AuthRequired(), h.UpdateSubTask)
 	router.DELETE("/task/delete/:id", AuthRequired(), h.DeleteTask)
 	router.POST("/task/archive/:id", AuthRequired(), h.ArchiveTask)
 	router.POST("/task/new", AuthRequired(), h.CreateNewTask)
-	router.POST("/subtask/new", AuthRequired(), h.CreateNewTask)
+	router.POST("/subtask/new", AuthRequired(), h.CreateNewSubTask)
+	router.POST("/create-subtask", AuthRequired(), h.InsertSubTask)
 
 	router.GET("/task/showAll", AuthRequired(), h.ShowTasks)
 	router.POST("/modify-task", AuthRequired(), h.ModifyTask)
@@ -402,6 +404,71 @@ func (h *Handler) CreateAccountRoute(c *gin.Context) {
 
 }
 
+func (h *Handler) CreateNewSubTask(c *gin.Context) {
+
+	session := sessions.Default(c)
+	userID := session.Get("user_id").(int)
+
+	taskID := c.PostForm("taskID")
+
+	if taskID == "" {
+		log.Printf("Task ID not provided")
+		// c.HTML(http.StatusBadRequest, "error.templ", gin.H{"Error": "No task ID provided"})
+		// return
+
+		c.HTML(http.StatusOK, "subtaskform_new.templ", nil)
+	}
+	log.Printf("Task ID: %v", taskID)
+
+	taskIDint, err := strconv.Atoi(taskID)
+	if err != nil {
+		log.Printf("Invalid task ID format: %v", err)
+		c.HTML(http.StatusBadRequest, "error.html", gin.H{"message": "Invalid task ID format"})
+		return
+	}
+	session.Set("task_id", taskID)
+	session.Save()
+
+	task, err := h.store.GetTaskByID(taskIDint) // Retrieve the task details
+	if err != nil {
+		log.Printf("retrieve task error: %v", err)
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"message": "Failed to load task"})
+		return
+	}
+
+	order, err := h.store.GetFieldOrder(userID) // Retrieve field order for the user
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"message": "Failed to load field order"})
+		return
+	}
+
+	defaultFieldOrderString := "title-section,state-section,credit-card-section,rib-section,contract-compliance-section,first-name-section,last-name-section,regulatory-check-section,bank-account-section,assigned-to-section,city-section,email-section,postal-code-section,priority-section,birth-date-section,created-at-section,last-modification-section"
+	defaultFields := strings.Split(defaultFieldOrderString, ",")
+
+	pinnedFields := strings.Split(order, ",")
+	pinnedFieldsMap := make(map[string]bool)
+	for _, field := range pinnedFields {
+		pinnedFieldsMap[field] = true
+	}
+
+	remainingFields := make([]string, 0)
+	for _, field := range defaultFields {
+		if !pinnedFieldsMap[field] {
+			remainingFields = append(remainingFields, field)
+		}
+	}
+
+	log.Printf("Pinned fields for display: %v", pinnedFields)
+	log.Printf("Remaining fields for display: %v", remainingFields)
+
+	c.HTML(http.StatusOK, "subtaskform_new.templ", gin.H{
+		"Task":            task,
+		"PinnedFields":    pinnedFields,
+		"RemainingFields": remainingFields,
+		"ParentTaskID":    taskID,
+	})
+}
+
 func (h *Handler) CreateNewTask(c *gin.Context) {
 	taskID := c.PostForm("taskID")
 
@@ -633,6 +700,7 @@ func (h *Handler) generateBankAccountNumber(c *gin.Context) {
 		"BankAccountNumber": accountNumber,
 	})
 }
+
 func (h *Handler) InsertTask(c *gin.Context) {
 	var task model.Task
 
@@ -657,19 +725,50 @@ func (h *Handler) InsertTask(c *gin.Context) {
 	now := time.Now()
 	task.CreatedAt = now.Format("2006-01-02 15:04:05")
 	task.Title = h.store.GenerateTitle()
-	// task.BankAccountNumber = h.store.GenerateBankAccountNumber()
-
-	// parts := strings.Split(task.AssignedTo, "-")
-	// if len(parts) != 2 {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid format for AssignedTo"})
-	// 	return
-	// }
-	// task.AssignedTo = strings.TrimSpace(parts[0])
 
 	log.Printf("Task Data: %+v", task)
 
 	// Attempt to create the task using the data provided
 	if err := h.store.CreateTask(task); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to create task: " + err.Error()})
+		return
+	}
+
+	// Redirect to a specific page after successful creation
+	c.Redirect(http.StatusSeeOther, "/task/showAll")
+}
+
+func (h *Handler) InsertSubTask(c *gin.Context) {
+	var subtask model.Subtask
+
+	// Log specific form values for debugging
+	log.Printf("in InsertsubTask:")
+	log.Printf("Credit card from form: %s", c.PostForm("credit_card"))
+	log.Printf("ParentTaskID from form: %s", c.PostForm("parentTaskID")) // Log ParentTaskID
+	log.Printf("Title from form: %s", c.PostForm("title"))
+	// log.Printf("Context keys: %v", c.Request.Header)
+	for key, value := range c.Request.Header {
+		log.Printf("%s: %s", key, value)
+	}
+	log.Printf("Form data: %v", c.Request.Form)
+	for key, value := range c.Request.Form {
+		log.Printf("%s: %s", key, value)
+	}
+
+	// Bind form data to task struct
+	if err := c.ShouldBind(&subtask); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error binding data: " + err.Error()})
+		return
+	}
+	now := time.Now()
+	subtask.CreatedAt = now.Format("2006-01-02 15:04:05")
+	subtask.Title = h.store.GenerateTitle()
+	subtask.ParentTaskID = c.PostForm("parentTaskID")
+
+	log.Printf("Task Data: %+v", subtask)
+
+	// Attempt to create the task using the data provided
+	if err := h.store.CreateSubTask(subtask); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to create task: " + err.Error()})
 		return
 	}
@@ -692,6 +791,26 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	// Update the task in the database
 	if err := h.store.UpdateTask(&updates); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to update task", "details": err.Error()})
+		return
+	}
+
+	c.Redirect(http.StatusSeeOther, "/task/showAll")
+}
+
+func (h *Handler) UpdateSubTask(c *gin.Context) {
+	var updates model.Task
+
+	if err := c.ShouldBind(&updates); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error binding data: " + err.Error()})
+		return
+	}
+	updates.ID, _ = strconv.Atoi(c.Param("id"))
+	now := time.Now()
+	updates.UpdatedAt = now.Format("2006-01-02 15:04:05")
+
+	// Update the task in the database
+	if err := h.store.UpdateSubTask(&updates); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to update subtask", "details": err.Error()})
 		return
 	}
 
